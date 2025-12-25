@@ -39,6 +39,8 @@ const square: Shape = [
 ];
 
 const shapes = new Map<number, Shape>();
+const SPEED = 250; //ms
+const NUM_OF_COLS = 15;
 
 shapes.set(0, horizontalLine);
 shapes.set(1, cross);
@@ -51,7 +53,7 @@ type Move = "gas" | "down";
 const createRows = (
   chamber: Chamber,
   numOfRows: number = 1,
-  numOfCols: number = 7,
+  numOfCols: number = NUM_OF_COLS,
   idxToAddNewPart: number,
   charToAdd = EMPTY
 ): Chamber => {
@@ -125,6 +127,7 @@ const canMoveDown = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
 
   return canGoDown;
 };
+
 const canMoveRight = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
   let canGoRight = true;
 
@@ -298,10 +301,6 @@ const prepareChamberForNewShape = (
   const shapeToAdd = shapes.get(shapeIdx)!;
   const isInitializing = chamber.length === 0;
   if (!isInitializing && shapeCoords) {
-    // const { minRow } = getMaxMinRows(shapeCoords);
-    // // drop all rows before minRow
-    // chamber.splice(0, minRow);
-
     const firstNonEmptyRow = chamber.findIndex((row) =>
       row.some((cell) => cell === REST || cell === LIVE)
     );
@@ -309,19 +308,10 @@ const prepareChamberForNewShape = (
       chamber.splice(0, firstNonEmptyRow); // drop only truly empty rows
     }
   }
-  chamber = createRows(chamber, 3, 7, highestRockOrFloorIdx);
+  chamber = createRows(chamber, 3, NUM_OF_COLS, highestRockOrFloorIdx);
   chamber.unshift(...shapeToAdd);
 
   return clone(chamber);
-};
-
-const originalLog = console.log;
-let loggedLines = 0;
-
-console.log = (...args) => {
-  const text = args.join(" ");
-  loggedLines += text.split("\n").length;
-  originalLog(...args);
 };
 
 const arraysAreEqual = <T>(a: T[][], b: T[][]) => {
@@ -332,7 +322,7 @@ const arraysAreEqual = <T>(a: T[][], b: T[][]) => {
   return true;
 };
 
-const animatedLogs = async (chamber: Chamber) => {
+const animatedLogs = async (chamber: Chamber, speed: number) => {
   const shapeCoords = getShapeCoords(chamber);
   const highestShapeRow = Math.min(...shapeCoords.map(([r]) => r)); // topmost row of shape
   const MAX_HEIGHT = 30;
@@ -351,82 +341,81 @@ const animatedLogs = async (chamber: Chamber) => {
     visibleRows.map((row) => row.join("")).join("\n") + "\n"
   );
 
-  await new Promise((res) => setTimeout(res, 100));
+  await new Promise((res) => setTimeout(res, speed));
 };
 
-const getTowerHeight = (chamber: Chamber) => {
-  // skip floor row at the bottom
-  for (let i = 0; i < chamber.length - 1; i++) {
-    if (chamber[i].some((cell) => cell === REST)) {
-      return chamber.length - 1 - i; // subtract floor row
-    }
-  }
-  return 0;
-};
+const getShapeIdx = () => Math.floor(Math.random() * (shapes.size - 1));
 
-const puzzle1 = async (file: string): Promise<number> => {
-  const input = (await readFile(file, "string")) as string;
-
-  const gasDir = input.split("") as GasDir[];
+const mainEngine = async () => {
   let chamber: Chamber = [];
-  const WHEN_TO_STOP = 2022;
-  let counter = 0;
-  let curGasDirectIdx = -1;
-  let shapeIdx = 0;
-  let curMove: Move = "gas";
   const enableLogs = true;
+  let curSpeed = SPEED;
 
-  chamber = prepareChamberForNewShape(chamber, shapeIdx, 0);
-  const floor = Array.from({ length: 7 }).map(() => FLOOR);
+  chamber = prepareChamberForNewShape(chamber, getShapeIdx(), 0);
+  const floor = Array.from({ length: NUM_OF_COLS }).map(() => FLOOR);
   chamber.push(floor);
-  while (counter < WHEN_TO_STOP) {
-    if (curGasDirectIdx === gasDir.length - 1) {
-      // start over
-      curGasDirectIdx = -1;
-    }
+  let userMove: GasDir | "down" | "rotate" | null = null;
 
-    if (shapeIdx === shapes.size - 1) {
-      // start over
-      shapeIdx = -1;
-    }
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
 
-    if (curMove === "gas") {
-      curGasDirectIdx++;
-      const currentGasDir: GasDir = gasDir[curGasDirectIdx];
-      chamber = moveShapeWithGas(chamber, currentGasDir);
-      enableLogs && (await animatedLogs(chamber));
-      curMove = "down";
+  process.stdin.on("data", (key) => {
+    if (key === "\u0003") {
+      // Ctrl+C to exit
+      process.exit();
+    } else if (key === "\u001b[D") {
+      // Left arrow
+      userMove = "<";
+    } else if (key === "\u001b[C") {
+      // Right arrow
+      userMove = ">";
+    } else if (key === "\u001b[B") {
+      // Down arrow
+      userMove = "down";
+    } else if (key === "\u001b[A") {
+      // Up arrow (you could use this for rotation)
+      userMove = "rotate";
+    }
+  });
+
+  // clear console on start
+  console.clear();
+  while (true) {
+    if (userMove === "<" || userMove === ">") {
+      chamber = moveShapeWithGas(chamber, userMove);
+      enableLogs && (await animatedLogs(chamber, curSpeed));
+      userMove = null; // reset after moving
       continue;
     }
 
-    if (curMove === "down") {
-      const shapeCoordsBefore = getShapeCoords(chamber);
-      chamber = moveShapeDown(chamber);
-      const shapeCoordsAfter = getShapeCoords(chamber);
+    if (userMove === "down") {
+      curSpeed = SPEED / 4;
+    } else {
+      curSpeed = SPEED;
+    }
 
-      if (!arraysAreEqual(shapeCoordsBefore, shapeCoordsAfter)) {
-        // Shape moved down successfully
-        curMove = "gas";
-        enableLogs && (await animatedLogs(chamber));
-        continue;
-      }
+    // move down
+    const shapeCoordsBefore = getShapeCoords(chamber);
+    chamber = moveShapeDown(chamber);
+    const shapeCoordsAfter = getShapeCoords(chamber);
 
-      // Could not move down → rest the shape
-      chamber = restShape(chamber, shapeCoordsAfter);
-      shapeIdx++;
-      chamber = prepareChamberForNewShape(
-        chamber,
-        shapeIdx,
-        0,
-        shapeCoordsAfter
-      );
-      counter++;
-
-      curMove = "gas";
+    if (!arraysAreEqual(shapeCoordsBefore, shapeCoordsAfter)) {
+      // Shape moved down successfully
+      enableLogs && (await animatedLogs(chamber, curSpeed));
       continue;
     }
+
+    // Could not move down → rest the shape
+    chamber = restShape(chamber, shapeCoordsAfter);
+    chamber = prepareChamberForNewShape(
+      chamber,
+      getShapeIdx(),
+      0,
+      shapeCoordsAfter
+    );
+    userMove = null;
   }
-  return getTowerHeight(chamber);
 };
 
-export default puzzle1;
+export default mainEngine;
