@@ -1,0 +1,31 @@
+export const pattern1 = [
+  ["M", "#", "M"],
+  ["#", "A", "#"],
+  ["S", "#", "S"],
+];
+
+export const pattern2 = [
+  ["S", "#", "M"],
+  ["#", "A", "#"],
+  ["S", "#", "M"],
+];
+
+export const pattern3 = [
+  ["M", "#", "M"],
+  ["#", "A", "#"],
+  ["S", "#", "S"],
+];
+
+export const pattern4 = [
+  ["S", "#", "S"],
+  ["#", "A", "#"],
+  ["M", "#", "M"],
+];
+
+export const pattern5 = [
+  ["M", "#", "S"],
+  ["#", "A", "#"],
+  ["M", "#", "S"],
+];
+
+export const patterns = [pattern1, pattern2, pattern3, pattern4, pattern5];

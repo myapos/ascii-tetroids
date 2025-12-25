@@ -1,4 +1,4 @@
-import { patterns } from "../2024/constants/constants";
+import { patterns } from "src/constants/constants";
 import maskPattern from "./maskPattern";
 
 const checkPatterns = (pattern: string[][]) => {

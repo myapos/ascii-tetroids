@@ -1,18 +1,12 @@
-import readFile from "utils/readFile";
-import printMap from "utils/printMap";
+import type { Shape, Chamber, ShapeCoords, GasDir } from "src/types";
 import isInBounds from "utils/isInBounds";
 import type { Pos } from "utils/types.ts";
-
-type Chamber = string[][];
-type Shape = string[][];
 
 const REST = "#";
 const FLOOR = "-";
 const LIVE = "@";
 const EMPTY = ".";
 const horizontalLine: Shape = [[".", ".", LIVE, LIVE, LIVE, LIVE, "."]];
-
-type ShapeCoords = number[][];
 
 const cross: Shape = [
   [".", ".", ".", LIVE, ".", ".", "."],
@@ -47,8 +41,6 @@ shapes.set(1, cross);
 shapes.set(2, L);
 shapes.set(3, verticalLine);
 shapes.set(4, square);
-type GasDir = "<" | ">";
-type Move = "gas" | "down";
 
 const createRows = (
   chamber: Chamber,

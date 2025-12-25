@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 
 import checkPatterns from "utils/checkPatterns";
-import * as patternsConstants from "../../2024/constants/constants";
+import * as patternsConstants from "src/constants/constants";
 
 describe("checkPatterns", () => {
   it("should return true for pattern 1", () => {
