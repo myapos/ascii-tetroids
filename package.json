@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx index.ts",
+    "debug": "node --inspect --import tsx index.ts",
     "start": "tsx index.ts",
     "test": "bun test"
   },

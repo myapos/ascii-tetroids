@@ -1,46 +1,44 @@
-import type { Shape, Chamber, ShapeCoords, GasDir } from "src/types";
+import type { Shape, Chamber, ShapeCoords, UserMove } from "src/types";
 import isInBounds from "utils/isInBounds";
 import type { Pos } from "utils/types.ts";
-
-const REST = "#";
-const FLOOR = "-";
-const LIVE = "@";
-const EMPTY = ".";
-const horizontalLine: Shape = [[".", ".", LIVE, LIVE, LIVE, LIVE, "."]];
-
-const cross: Shape = [
-  [".", ".", ".", LIVE, ".", ".", "."],
-  [".", ".", LIVE, LIVE, LIVE, ".", "."],
-  [".", ".", ".", LIVE, ".", ".", "."],
-];
-
-const L: Shape = [
-  [".", ".", ".", ".", LIVE, ".", "."],
-  [".", ".", ".", ".", LIVE, ".", "."],
-  [".", ".", LIVE, LIVE, LIVE, ".", "."],
-];
-
-const verticalLine: Shape = [
-  [".", ".", LIVE, ".", ".", ".", "."],
-  [".", ".", LIVE, ".", ".", ".", "."],
-  [".", ".", LIVE, ".", ".", ".", "."],
-  [".", ".", LIVE, ".", ".", ".", "."],
-];
-
-const square: Shape = [
-  [".", ".", LIVE, LIVE, ".", ".", "."],
-  [".", ".", LIVE, LIVE, ".", ".", "."],
-];
+import L from "src/shapes/L";
+import cross from "src/shapes/cross";
+import verticalLine from "src/shapes/verticalLine";
+import horizontalLine from "src/shapes/horizontalLine";
+import square from "src/shapes/square";
+import rotateMatrix from "utils/rotateMatrix";
+import { REST, FLOOR, LIVE, EMPTY } from "src/constants/constants";
 
 const shapes = new Map<number, Shape>();
-const SPEED = 250; //ms
-const NUM_OF_COLS = 15;
+const SPEED = 1000; //ms
+const NUM_OF_COLS = 30;
 
 shapes.set(0, horizontalLine);
 shapes.set(1, cross);
 shapes.set(2, L);
 shapes.set(3, verticalLine);
 shapes.set(4, square);
+
+// Pad a shape to match the desired width by adding empty cells
+const padShape = (shape: Shape, targetWidth: number): Shape => {
+  return shape.map((row) => {
+    const currentWidth = row.length;
+    const totalPadding = targetWidth - currentWidth;
+    const leftPad = Math.floor(totalPadding / 2);
+    const rightPad = totalPadding - leftPad;
+
+    return [
+      ...Array(leftPad).fill(EMPTY),
+      ...row,
+      ...Array(rightPad).fill(EMPTY),
+    ];
+  });
+};
+
+// Pad all shapes to match NUM_OF_COLS
+for (const [key, shape] of shapes.entries()) {
+  shapes.set(key, padShape(shape, NUM_OF_COLS));
+}
 
 const createRows = (
   chamber: Chamber,
@@ -201,7 +199,7 @@ const moveShapeDown = (chamber: Chamber): Chamber => {
 const collidesToTheEdges = (
   chamber: Chamber,
   shapeCoords: ShapeCoords,
-  gasDir: GasDir
+  UserMove: UserMove
 ) => {
   let maxCol = -Infinity;
   let minCol = +Infinity;
@@ -218,7 +216,7 @@ const collidesToTheEdges = (
     }
   });
 
-  return gasDir === ">" ? maxCol === chamber[0].length - 1 : minCol === 0;
+  return UserMove === ">" ? maxCol === chamber[0].length - 1 : minCol === 0;
 };
 
 const moveShapeLeft = (chamber: Chamber, shapeCoords: ShapeCoords): Chamber => {
@@ -264,14 +262,17 @@ const moveShapeRight = (
   return clone(chamber);
 };
 
-const moveShapeWithGas = (chamber: Chamber, currentGasDir: GasDir): Chamber => {
+const moveShapeWithGas = (
+  chamber: Chamber,
+  currentUserMove: UserMove
+): Chamber => {
   const shapeCoords = getShapeCoords(chamber);
 
-  if (currentGasDir === "<") {
+  if (currentUserMove === "<") {
     chamber = moveShapeLeft(chamber, shapeCoords);
   }
 
-  if (currentGasDir === ">") {
+  if (currentUserMove === ">") {
     chamber = moveShapeRight(chamber, shapeCoords);
   }
   return clone(chamber);
@@ -338,6 +339,86 @@ const animatedLogs = async (chamber: Chamber, speed: number) => {
 
 const getShapeIdx = () => Math.floor(Math.random() * (shapes.size - 1));
 
+const rotateShape = (chamber: Chamber) => {
+  const shapeCoords = getShapeCoords(chamber);
+
+  // If no shape, nothing to rotate
+  if (shapeCoords.length === 0) return chamber;
+
+  // Find the bounding box of LIVE cells only
+  let minRow = Infinity;
+  let maxRow = -Infinity;
+  let minCol = Infinity;
+  let maxCol = -Infinity;
+
+  for (const [row, col] of shapeCoords) {
+    minRow = Math.min(minRow, row);
+    maxRow = Math.max(maxRow, row);
+    minCol = Math.min(minCol, col);
+    maxCol = Math.max(maxCol, col);
+  }
+
+  // Extract minimal bounding box containing only LIVE cells
+  const minimalShape: Chamber = [];
+  for (let i = minRow; i <= maxRow; i++) {
+    const row: string[] = [];
+    for (let j = minCol; j <= maxCol; j++) {
+      row.push(chamber[i][j]);
+    }
+    minimalShape.push(row);
+  }
+
+  // Create a copy without the current shape for validation
+  const chamberWithoutShape = deleteShape(shapeCoords, chamber);
+
+  // Rotate the minimal shape
+  const rotatedShape = rotateMatrix(minimalShape);
+
+  // VALIDATE: Check if all rotated cells can be placed
+  const rotatedCoords: Array<[number, number]> = [];
+  for (let i = 0; i < rotatedShape.length; i++) {
+    for (let j = 0; j < rotatedShape[i].length; j++) {
+      if (rotatedShape[i][j] === LIVE) {
+        const newRow = minRow + i;
+        const newCol = minCol + j;
+        rotatedCoords.push([newRow, newCol]);
+      }
+    }
+  }
+
+  // Check if ALL rotated cells are valid
+  const canRotate = rotatedCoords.every(([row, col]) => {
+    // Check bounds
+    if (
+      row < 0 ||
+      row >= chamberWithoutShape.length ||
+      col < 0 ||
+      col >= chamberWithoutShape[0].length
+    ) {
+      return false;
+    }
+    // Check if cell is empty (no rested shape there)
+    if (chamberWithoutShape[row][col] !== EMPTY) {
+      return false;
+    }
+    return true;
+  });
+
+  // Only apply rotation if all cells are valid
+  if (canRotate) {
+    for (const [row, col] of rotatedCoords) {
+      chamberWithoutShape[row][col] = LIVE;
+    }
+    return chamberWithoutShape;
+  }
+
+  // If rotation is invalid, restore the original shape and return unchanged
+  for (const [row, col] of shapeCoords) {
+    chamber[row][col] = LIVE;
+  }
+  return chamber;
+};
+
 const mainEngine = async () => {
   let chamber: Chamber = [];
   const enableLogs = true;
@@ -346,7 +427,11 @@ const mainEngine = async () => {
   chamber = prepareChamberForNewShape(chamber, getShapeIdx(), 0);
   const floor = Array.from({ length: NUM_OF_COLS }).map(() => FLOOR);
   chamber.push(floor);
-  let userMove: GasDir | "down" | "rotate" | null = null;
+
+  // Queue for key presses - process one per cycle
+  const keyQueue: string[] = [];
+  let lastMoveTime = 0;
+  const MOVE_DELAY = 50; // ms between each move
 
   process.stdin.setRawMode(true);
   process.stdin.resume();
@@ -357,32 +442,38 @@ const mainEngine = async () => {
       // Ctrl+C to exit
       process.exit();
     } else if (key === "\u001b[D") {
-      // Left arrow
-      userMove = "<";
+      // Left arrow - add to queue
+      keyQueue.push("<");
     } else if (key === "\u001b[C") {
-      // Right arrow
-      userMove = ">";
+      // Right arrow - add to queue
+      keyQueue.push(">");
     } else if (key === "\u001b[B") {
-      // Down arrow
-      userMove = "down";
+      // Down arrow - add to queue
+      keyQueue.push("down");
     } else if (key === "\u001b[A") {
-      // Up arrow (you could use this for rotation)
-      userMove = "rotate";
+      // Up arrow - rotation
+      keyQueue.push("rotate");
     }
   });
 
   // clear console on start
   console.clear();
   while (true) {
-    if (userMove === "<" || userMove === ">") {
-      chamber = moveShapeWithGas(chamber, userMove);
-      enableLogs && (await animatedLogs(chamber, curSpeed));
-      userMove = null; // reset after moving
-      continue;
-    }
+    // Process one key from the queue with delay
+    const now = Date.now();
+    if (keyQueue.length > 0 && now - lastMoveTime > MOVE_DELAY) {
+      const move = keyQueue.shift()!; // Remove and process one key
+      lastMoveTime = now;
 
-    if (userMove === "down") {
-      curSpeed = SPEED / 4;
+      if (move === "rotate") {
+        chamber = rotateShape(chamber);
+        enableLogs && (await animatedLogs(chamber, 100)); // Show rotation immediately
+      } else if (move === "<" || move === ">") {
+        chamber = moveShapeWithGas(chamber, move);
+        enableLogs && (await animatedLogs(chamber, 50)); // Show movement
+      } else if (move === "down") {
+        curSpeed = SPEED / 4;
+      }
     } else {
       curSpeed = SPEED;
     }
@@ -406,7 +497,7 @@ const mainEngine = async () => {
       0,
       shapeCoordsAfter
     );
-    userMove = null;
+    keyQueue.length = 0; // Clear the queue when new shape appears
   }
 };
 

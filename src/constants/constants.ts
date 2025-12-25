@@ -29,3 +29,8 @@ export const pattern5 = [
 ];
 
 export const patterns = [pattern1, pattern2, pattern3, pattern4, pattern5];
+
+export const LIVE = "@";
+export const REST = "#";
+export const FLOOR = "-";
+export const EMPTY = ".";
