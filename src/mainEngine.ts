@@ -1,11 +1,6 @@
 import type { Shape, Chamber, ShapeCoords, UserMove } from "src/types";
 import isInBounds from "utils/isInBounds";
 import type { Pos } from "utils/types.ts";
-import L from "src/shapes/L";
-import cross from "src/shapes/cross";
-import verticalLine from "src/shapes/verticalLine";
-import horizontalLine from "src/shapes/horizontalLine";
-import square from "src/shapes/square";
 import rotateMatrix from "utils/rotateMatrix";
 import {
   REST,
@@ -13,57 +8,12 @@ import {
   LIVE,
   EMPTY,
   MAX_CHAMBER_HEIGHT,
+  SPEED,
+  NUM_OF_COLS,
 } from "src/constants/constants";
+import createShapes from "src/shapes/createShapes";
 
-const shapes = new Map<number, Shape>();
-const SPEED = 250; //ms
-const NUM_OF_COLS = 30;
-
-shapes.set(0, horizontalLine);
-shapes.set(1, cross);
-shapes.set(2, L);
-shapes.set(3, verticalLine);
-shapes.set(4, square);
-
-// Pad a shape to match the desired width by adding empty cells
-const padShape = (shape: Shape, targetWidth: number): Shape => {
-  return shape.map((row) => {
-    const currentWidth = row.length;
-    const totalPadding = targetWidth - currentWidth;
-    const leftPad = Math.floor(totalPadding / 2);
-    const rightPad = totalPadding - leftPad;
-
-    return [
-      ...Array(leftPad).fill(EMPTY),
-      ...row,
-      ...Array(rightPad).fill(EMPTY),
-    ];
-  });
-};
-
-// Pad all shapes to match NUM_OF_COLS
-for (const [key, shape] of shapes.entries()) {
-  shapes.set(key, padShape(shape, NUM_OF_COLS));
-}
-
-const createRows = (
-  chamber: Chamber,
-  numOfRows: number = 1,
-  numOfCols: number = NUM_OF_COLS,
-  idxToAddNewPart: number,
-  charToAdd = EMPTY
-): Chamber => {
-  const newPartOfChamper = Array.from({ length: numOfRows }).map((row) =>
-    Array.from({ length: numOfCols }).map(() => charToAdd)
-  );
-
-  chamber = [
-    ...chamber.slice(0, idxToAddNewPart),
-    ...newPartOfChamper,
-    ...chamber.slice(idxToAddNewPart),
-  ];
-  return chamber;
-};
+const shapes = createShapes();
 
 const clone = (chamber: Chamber): Chamber => chamber.map((row) => [...row]);
 
@@ -151,6 +101,7 @@ const canMoveRight = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
 
   return canGoRight;
 };
+
 const canMoveLeft = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
   // find for each row the minimum frontier cols and check if there is
   // any available space left before it
@@ -291,32 +242,6 @@ const restShape = (chamber: Chamber, shapeCoords: ShapeCoords) => {
   return clone(chamber);
 };
 
-const prepareChamberForNewShape = (
-  chamber: Chamber,
-  shapeIdx: number,
-  highestRockOrFloorIdx: number,
-  shapeCoords?: ShapeCoords
-): Chamber => {
-  const shapeToAdd = shapes.get(shapeIdx)!;
-  const isInitializing = chamber.length === 0;
-
-  if (!isInitializing && shapeCoords) {
-    const firstNonEmptyRow = chamber.findIndex((row) =>
-      row.some((cell) => cell === REST || cell === LIVE)
-    );
-    if (firstNonEmptyRow > 0) {
-      chamber.splice(0, firstNonEmptyRow); // drop only truly empty rows
-    }
-  }
-  chamber = createRows(chamber, 3, NUM_OF_COLS, highestRockOrFloorIdx);
-  chamber.unshift(...shapeToAdd);
-
-  const floor = Array.from({ length: NUM_OF_COLS }).map(() => FLOOR);
-  chamber.push(floor);
-
-  return clone(chamber);
-};
-
 const arraysAreEqual = <T>(a: T[][], b: T[][]) => {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
@@ -347,7 +272,7 @@ const animatedLogs = async (chamber: Chamber, speed: number) => {
   await new Promise((res) => setTimeout(res, speed));
 };
 
-const getShapeIdx = () => Math.floor(Math.random() * (shapes.size - 1));
+const getShapeIdx = () => Math.floor(Math.random() * shapes.size);
 
 const rotateShape = (chamber: Chamber) => {
   const shapeCoords = getShapeCoords(chamber);
@@ -501,7 +426,6 @@ const mainEngine = async () => {
   const enableLogs = true;
   let curSpeed = SPEED;
   chamber = initializeChamber();
-  // chamber = prepareChamberForNewShape(chamber, getShapeIdx(), 0);
 
   // Queue for key presses - process one per cycle
   const keyQueue: string[] = [];
@@ -510,6 +434,7 @@ const mainEngine = async () => {
   const MAX_QUEUE_SIZE = 3; // Prevent queue buildup
   const lastKeyPressTime: Record<string, number> = {}; // Debounce repeated keys
   const DEBOUNCE_TIME = 0; // ms between same key presses
+  let isPaused = false; // Pause state
 
   process.stdin.setRawMode(true);
   process.stdin.resume();
@@ -519,6 +444,16 @@ const mainEngine = async () => {
     if (key === "\u0003") {
       // Ctrl+C to exit
       process.exit();
+    }
+
+    // Handle pause/resume with 'p' or space key
+    if (key === "p" || key === "P" || key === " ") {
+      isPaused = !isPaused;
+      if (isPaused) {
+        console.clear();
+        console.log("GAME PAUSED - Press 'p' or space to resume");
+      }
+      return;
     }
 
     const now = Date.now();
@@ -555,6 +490,12 @@ const mainEngine = async () => {
   let lastGravityTime = 0;
 
   while (true) {
+    // Skip game logic if paused
+    if (isPaused) {
+      await new Promise((res) => setTimeout(res, 50)); // Small delay to prevent CPU spinning
+      continue;
+    }
+
     // INNER LOOP: Process lateral movement and rotation as fast as debounced
     let innerNow = Date.now();
     while (keyQueue.length > 0 && innerNow - lastMoveTime > MOVE_DELAY) {

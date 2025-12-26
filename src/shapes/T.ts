@@ -1,10 +1,10 @@
 import type { Shape } from "src/types";
 import { LIVE } from "src/constants/constants";
 
-const cross: Shape = [
-  [".", LIVE, "."],
+const T: Shape = [
+  [".", ".", "."],
   [LIVE, LIVE, LIVE],
   [".", LIVE, "."],
 ];
 
-export default cross;
+export default T;
