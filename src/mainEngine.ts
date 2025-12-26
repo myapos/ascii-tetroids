@@ -1,11 +1,6 @@
 import type { Shape, Chamber, ShapeCoords, UserMove } from "src/types";
 import isInBounds from "utils/isInBounds";
 import type { Pos } from "utils/types.ts";
-import L from "src/shapes/L";
-import cross from "src/shapes/cross";
-import verticalLine from "src/shapes/verticalLine";
-import horizontalLine from "src/shapes/horizontalLine";
-import square from "src/shapes/square";
 import rotateMatrix from "utils/rotateMatrix";
 import {
   REST,
@@ -13,38 +8,12 @@ import {
   LIVE,
   EMPTY,
   MAX_CHAMBER_HEIGHT,
+  SPEED,
 } from "src/constants/constants";
+import createShapes from "src/shapes/createShapes";
 
-const shapes = new Map<number, Shape>();
-const SPEED = 250; //ms
+const shapes = createShapes();
 const NUM_OF_COLS = 30;
-
-shapes.set(0, horizontalLine);
-shapes.set(1, cross);
-shapes.set(2, L);
-shapes.set(3, verticalLine);
-shapes.set(4, square);
-
-// Pad a shape to match the desired width by adding empty cells
-const padShape = (shape: Shape, targetWidth: number): Shape => {
-  return shape.map((row) => {
-    const currentWidth = row.length;
-    const totalPadding = targetWidth - currentWidth;
-    const leftPad = Math.floor(totalPadding / 2);
-    const rightPad = totalPadding - leftPad;
-
-    return [
-      ...Array(leftPad).fill(EMPTY),
-      ...row,
-      ...Array(rightPad).fill(EMPTY),
-    ];
-  });
-};
-
-// Pad all shapes to match NUM_OF_COLS
-for (const [key, shape] of shapes.entries()) {
-  shapes.set(key, padShape(shape, NUM_OF_COLS));
-}
 
 const createRows = (
   chamber: Chamber,
@@ -151,6 +120,7 @@ const canMoveRight = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
 
   return canGoRight;
 };
+
 const canMoveLeft = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
   // find for each row the minimum frontier cols and check if there is
   // any available space left before it
@@ -291,32 +261,6 @@ const restShape = (chamber: Chamber, shapeCoords: ShapeCoords) => {
   return clone(chamber);
 };
 
-const prepareChamberForNewShape = (
-  chamber: Chamber,
-  shapeIdx: number,
-  highestRockOrFloorIdx: number,
-  shapeCoords?: ShapeCoords
-): Chamber => {
-  const shapeToAdd = shapes.get(shapeIdx)!;
-  const isInitializing = chamber.length === 0;
-
-  if (!isInitializing && shapeCoords) {
-    const firstNonEmptyRow = chamber.findIndex((row) =>
-      row.some((cell) => cell === REST || cell === LIVE)
-    );
-    if (firstNonEmptyRow > 0) {
-      chamber.splice(0, firstNonEmptyRow); // drop only truly empty rows
-    }
-  }
-  chamber = createRows(chamber, 3, NUM_OF_COLS, highestRockOrFloorIdx);
-  chamber.unshift(...shapeToAdd);
-
-  const floor = Array.from({ length: NUM_OF_COLS }).map(() => FLOOR);
-  chamber.push(floor);
-
-  return clone(chamber);
-};
-
 const arraysAreEqual = <T>(a: T[][], b: T[][]) => {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
@@ -347,7 +291,7 @@ const animatedLogs = async (chamber: Chamber, speed: number) => {
   await new Promise((res) => setTimeout(res, speed));
 };
 
-const getShapeIdx = () => Math.floor(Math.random() * (shapes.size - 1));
+const getShapeIdx = () => Math.floor(Math.random() * shapes.size);
 
 const rotateShape = (chamber: Chamber) => {
   const shapeCoords = getShapeCoords(chamber);
@@ -501,7 +445,6 @@ const mainEngine = async () => {
   const enableLogs = true;
   let curSpeed = SPEED;
   chamber = initializeChamber();
-  // chamber = prepareChamberForNewShape(chamber, getShapeIdx(), 0);
 
   // Queue for key presses - process one per cycle
   const keyQueue: string[] = [];
