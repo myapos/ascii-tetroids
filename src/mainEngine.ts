@@ -7,10 +7,16 @@ import verticalLine from "src/shapes/verticalLine";
 import horizontalLine from "src/shapes/horizontalLine";
 import square from "src/shapes/square";
 import rotateMatrix from "utils/rotateMatrix";
-import { REST, FLOOR, LIVE, EMPTY } from "src/constants/constants";
+import {
+  REST,
+  FLOOR,
+  LIVE,
+  EMPTY,
+  MAX_CHAMBER_HEIGHT,
+} from "src/constants/constants";
 
 const shapes = new Map<number, Shape>();
-const SPEED = 1000; //ms
+const SPEED = 250; //ms
 const NUM_OF_COLS = 30;
 
 shapes.set(0, horizontalLine);
@@ -280,7 +286,7 @@ const moveShapeWithGas = (
 
 const restShape = (chamber: Chamber, shapeCoords: ShapeCoords) => {
   shapeCoords.forEach((coord) => {
-    chamber[coord[0]][coord[1]] = "#";
+    chamber[coord[0]][coord[1]] = REST;
   });
   return clone(chamber);
 };
@@ -293,6 +299,7 @@ const prepareChamberForNewShape = (
 ): Chamber => {
   const shapeToAdd = shapes.get(shapeIdx)!;
   const isInitializing = chamber.length === 0;
+
   if (!isInitializing && shapeCoords) {
     const firstNonEmptyRow = chamber.findIndex((row) =>
       row.some((cell) => cell === REST || cell === LIVE)
@@ -303,6 +310,9 @@ const prepareChamberForNewShape = (
   }
   chamber = createRows(chamber, 3, NUM_OF_COLS, highestRockOrFloorIdx);
   chamber.unshift(...shapeToAdd);
+
+  const floor = Array.from({ length: NUM_OF_COLS }).map(() => FLOOR);
+  chamber.push(floor);
 
   return clone(chamber);
 };
@@ -322,12 +332,12 @@ const animatedLogs = async (chamber: Chamber, speed: number) => {
 
   // window: from topRow to topRow + MAX_HEIGHT
   let topRow = Math.max(0, highestShapeRow - 2); // small margin above shape
-  if (topRow + MAX_HEIGHT > chamber.length) {
-    topRow = chamber.length - MAX_HEIGHT;
+  if (topRow + MAX_CHAMBER_HEIGHT > chamber.length) {
+    topRow = chamber.length - MAX_CHAMBER_HEIGHT;
   }
   topRow = Math.max(0, topRow); // safety
 
-  const visibleRows = chamber.slice(topRow, topRow + MAX_HEIGHT);
+  const visibleRows = chamber.slice(topRow, topRow + MAX_CHAMBER_HEIGHT);
 
   process.stdout.write("\x1b[H"); // move cursor to top-left
   process.stdout.write(
@@ -419,19 +429,87 @@ const rotateShape = (chamber: Chamber) => {
   return chamber;
 };
 
+const addShape = (shapeIdx: number, chamber: Chamber): Chamber => {
+  const shape = shapes.get(shapeIdx)!;
+  // delete the length of the shape from champer
+  chamber.splice(0, shape.length);
+  chamber.unshift(...shape);
+  return chamber;
+};
+// it will create a 2D chamber of MAX_WIDTH and MAX_ROWS with empty cell
+// and add shape to the start
+const initializeChamber = (): Chamber => {
+  let chamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT }).map(() => {
+    return Array.from({ length: NUM_OF_COLS }).map(() => EMPTY);
+  });
+  // for (let i = 0; i < MAX_CHAMBER_HEIGHT; i++) {
+  //   for (let j = 0; j < NUM_OF_COLS; j++) {
+  //     chamber[i][j] = EMPTY;
+  //   }
+  // }
+
+  const shapeIdx = getShapeIdx();
+  chamber = addShape(shapeIdx, chamber);
+
+  return chamber;
+};
+
+const checkFilledRows = (chamber: Chamber): Chamber => {
+  for (let i = 0; i < chamber.length; i++) {
+    let filledCells = 0;
+    for (let j = 0; j < chamber[0].length; j++) {
+      if (chamber[i][j] === REST) {
+        filledCells++;
+      }
+    }
+
+    const isFilledRow = filledCells === chamber[0].length;
+    if (isFilledRow) {
+      //1. remove row from that place
+      chamber.splice(i, 1);
+      //2. add an empty row to the beginning
+      const newEmptyRow: string[] = Array.from({ length: NUM_OF_COLS }).map(
+        () => EMPTY
+      );
+      chamber.unshift(newEmptyRow);
+    }
+  }
+
+  return clone(chamber);
+};
+
+const getTowerHeight = (chamber: Chamber) => {
+  // skip floor row at the bottom
+  for (let i = 0; i < chamber.length - 1; i++) {
+    if (chamber[i].some((cell) => cell === REST)) {
+      return chamber.length - 1 - i; // subtract floor row
+    }
+  }
+  return 0;
+};
+
+const checkIfPlayerLost = (chamber: Chamber, shapeIdx: number): boolean => {
+  let towerHeight = getTowerHeight(chamber);
+  let totalHeight = towerHeight + shapes.get(shapeIdx)!.length;
+  let hasReachedToTop = totalHeight >= chamber.length - 1; // removes the floor
+
+  return hasReachedToTop;
+};
+
 const mainEngine = async () => {
   let chamber: Chamber = [];
   const enableLogs = true;
   let curSpeed = SPEED;
-
-  chamber = prepareChamberForNewShape(chamber, getShapeIdx(), 0);
-  const floor = Array.from({ length: NUM_OF_COLS }).map(() => FLOOR);
-  chamber.push(floor);
+  chamber = initializeChamber();
+  // chamber = prepareChamberForNewShape(chamber, getShapeIdx(), 0);
 
   // Queue for key presses - process one per cycle
   const keyQueue: string[] = [];
   let lastMoveTime = 0;
-  const MOVE_DELAY = 50; // ms between each move
+  const MOVE_DELAY = 2; // ms between each move
+  const MAX_QUEUE_SIZE = 3; // Prevent queue buildup
+  const lastKeyPressTime: Record<string, number> = {}; // Debounce repeated keys
+  const DEBOUNCE_TIME = 0; // ms between same key presses
 
   process.stdin.setRawMode(true);
   process.stdin.resume();
@@ -441,63 +519,98 @@ const mainEngine = async () => {
     if (key === "\u0003") {
       // Ctrl+C to exit
       process.exit();
-    } else if (key === "\u001b[D") {
-      // Left arrow - add to queue
-      keyQueue.push("<");
+    }
+
+    const now = Date.now();
+    let keyType = "";
+
+    if (key === "\u001b[D") {
+      keyType = "<";
     } else if (key === "\u001b[C") {
-      // Right arrow - add to queue
-      keyQueue.push(">");
+      keyType = ">";
     } else if (key === "\u001b[B") {
-      // Down arrow - add to queue
-      keyQueue.push("down");
+      keyType = "down";
     } else if (key === "\u001b[A") {
-      // Up arrow - rotation
-      keyQueue.push("rotate");
+      keyType = "rotate";
+    }
+
+    // Debounce: only add key if enough time passed since last press of same key
+    if (
+      keyType &&
+      (!lastKeyPressTime[keyType] ||
+        now - lastKeyPressTime[keyType] > DEBOUNCE_TIME)
+    ) {
+      lastKeyPressTime[keyType] = now;
+
+      // Only add to queue if it's not already full
+      if (keyQueue.length < MAX_QUEUE_SIZE) {
+        keyQueue.push(keyType);
+      }
     }
   });
 
   // clear console on start
   console.clear();
+
+  let lastGravityTime = 0;
+
   while (true) {
-    // Process one key from the queue with delay
-    const now = Date.now();
-    if (keyQueue.length > 0 && now - lastMoveTime > MOVE_DELAY) {
+    // INNER LOOP: Process lateral movement and rotation as fast as debounced
+    let innerNow = Date.now();
+    while (keyQueue.length > 0 && innerNow - lastMoveTime > MOVE_DELAY) {
       const move = keyQueue.shift()!; // Remove and process one key
-      lastMoveTime = now;
+      lastMoveTime = innerNow;
 
       if (move === "rotate") {
         chamber = rotateShape(chamber);
-        enableLogs && (await animatedLogs(chamber, 100)); // Show rotation immediately
+        enableLogs && (await animatedLogs(chamber, 20)); // Show rotation immediately
       } else if (move === "<" || move === ">") {
         chamber = moveShapeWithGas(chamber, move);
-        enableLogs && (await animatedLogs(chamber, 50)); // Show movement
+        enableLogs && (await animatedLogs(chamber, 10)); // Faster display for lateral movement
       } else if (move === "down") {
-        curSpeed = SPEED / 4;
+        // Actually move the piece down when down key is pressed
+        const shapeCoordsBefore = getShapeCoords(chamber);
+        chamber = moveShapeDown(chamber);
+        const shapeCoordsAfter = getShapeCoords(chamber);
+
+        if (!arraysAreEqual(shapeCoordsBefore, shapeCoordsAfter)) {
+          enableLogs && (await animatedLogs(chamber, 10));
+        }
       }
-    } else {
-      curSpeed = SPEED;
+
+      // Update time inside loop so multiple moves can process
+      innerNow = Date.now();
     }
 
-    // move down
-    const shapeCoordsBefore = getShapeCoords(chamber);
-    chamber = moveShapeDown(chamber);
-    const shapeCoordsAfter = getShapeCoords(chamber);
+    // OUTER LOOP: Apply gravity at normal speed
+    const now = Date.now();
+    if (now - lastGravityTime > SPEED) {
+      lastGravityTime = now;
 
-    if (!arraysAreEqual(shapeCoordsBefore, shapeCoordsAfter)) {
-      // Shape moved down successfully
-      enableLogs && (await animatedLogs(chamber, curSpeed));
-      continue;
+      // move down
+      const shapeCoordsBefore = getShapeCoords(chamber);
+      chamber = moveShapeDown(chamber);
+      const shapeCoordsAfter = getShapeCoords(chamber);
+
+      if (!arraysAreEqual(shapeCoordsBefore, shapeCoordsAfter)) {
+        // Shape moved down successfully
+        enableLogs && (await animatedLogs(chamber, curSpeed));
+      } else {
+        // Could not move down → rest the shape
+        chamber = restShape(chamber, shapeCoordsAfter);
+        const newShapeIdx = getShapeIdx();
+        chamber = addShape(newShapeIdx, chamber);
+        keyQueue.length = 0; // Clear the queue when new shape appears
+        chamber = checkFilledRows(chamber);
+        const lost = checkIfPlayerLost(chamber, newShapeIdx);
+
+        if (lost) {
+          console.log("YOU LOST!! Try again");
+
+          break;
+        }
+      }
     }
-
-    // Could not move down → rest the shape
-    chamber = restShape(chamber, shapeCoordsAfter);
-    chamber = prepareChamberForNewShape(
-      chamber,
-      getShapeIdx(),
-      0,
-      shapeCoordsAfter
-    );
-    keyQueue.length = 0; // Clear the queue when new shape appears
   }
 };
 

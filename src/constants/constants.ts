@@ -34,3 +34,4 @@ export const LIVE = "@";
 export const REST = "#";
 export const FLOOR = "-";
 export const EMPTY = ".";
+export const MAX_CHAMBER_HEIGHT = 25;
