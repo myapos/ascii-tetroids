@@ -1,5 +1,5 @@
 import rotateDirection from "utils/rotateDirection";
-import directionsMap from "2024/constants/directionsMap.ts";
+import directionsMap from "src/constants/directionsMap";
 import type { Direction } from "utils/types.ts";
 
 type Mark = "|" | "+" | "-";

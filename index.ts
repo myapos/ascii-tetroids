@@ -1,8 +1,7 @@
 import mainEngine from "./src/mainEngine";
 
 const main = async () => {
-  const result = await mainEngine();
-  console.log("Result:", result);
+  await mainEngine();
 };
 
 main();
