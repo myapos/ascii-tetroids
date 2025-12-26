@@ -9,11 +9,11 @@ import {
   EMPTY,
   MAX_CHAMBER_HEIGHT,
   SPEED,
+  NUM_OF_COLS,
 } from "src/constants/constants";
 import createShapes from "src/shapes/createShapes";
 
 const shapes = createShapes();
-const NUM_OF_COLS = 30;
 
 const clone = (chamber: Chamber): Chamber => chamber.map((row) => [...row]);
 

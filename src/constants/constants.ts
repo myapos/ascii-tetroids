@@ -35,5 +35,5 @@ export const REST = "#";
 export const FLOOR = "-";
 export const EMPTY = ".";
 export const MAX_CHAMBER_HEIGHT = 25;
-export const NUM_OF_COLS = 30;
+export const NUM_OF_COLS = 15;
 export const SPEED = 250; //ms
