@@ -15,25 +15,6 @@ import createShapes from "src/shapes/createShapes";
 const shapes = createShapes();
 const NUM_OF_COLS = 30;
 
-const createRows = (
-  chamber: Chamber,
-  numOfRows: number = 1,
-  numOfCols: number = NUM_OF_COLS,
-  idxToAddNewPart: number,
-  charToAdd = EMPTY
-): Chamber => {
-  const newPartOfChamper = Array.from({ length: numOfRows }).map((row) =>
-    Array.from({ length: numOfCols }).map(() => charToAdd)
-  );
-
-  chamber = [
-    ...chamber.slice(0, idxToAddNewPart),
-    ...newPartOfChamper,
-    ...chamber.slice(idxToAddNewPart),
-  ];
-  return chamber;
-};
-
 const clone = (chamber: Chamber): Chamber => chamber.map((row) => [...row]);
 
 const getShapeCoords = (chamber: Chamber): ShapeCoords => {
@@ -453,6 +434,7 @@ const mainEngine = async () => {
   const MAX_QUEUE_SIZE = 3; // Prevent queue buildup
   const lastKeyPressTime: Record<string, number> = {}; // Debounce repeated keys
   const DEBOUNCE_TIME = 0; // ms between same key presses
+  let isPaused = false; // Pause state
 
   process.stdin.setRawMode(true);
   process.stdin.resume();
@@ -462,6 +444,16 @@ const mainEngine = async () => {
     if (key === "\u0003") {
       // Ctrl+C to exit
       process.exit();
+    }
+
+    // Handle pause/resume with 'p' or space key
+    if (key === "p" || key === "P" || key === " ") {
+      isPaused = !isPaused;
+      if (isPaused) {
+        console.clear();
+        console.log("GAME PAUSED - Press 'p' or space to resume");
+      }
+      return;
     }
 
     const now = Date.now();
@@ -498,6 +490,12 @@ const mainEngine = async () => {
   let lastGravityTime = 0;
 
   while (true) {
+    // Skip game logic if paused
+    if (isPaused) {
+      await new Promise((res) => setTimeout(res, 50)); // Small delay to prevent CPU spinning
+      continue;
+    }
+
     // INNER LOOP: Process lateral movement and rotation as fast as debounced
     let innerNow = Date.now();
     while (keyQueue.length > 0 && innerNow - lastMoveTime > MOVE_DELAY) {
