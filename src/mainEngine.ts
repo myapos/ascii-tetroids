@@ -6,12 +6,12 @@ import {
   REST,
   FLOOR,
   LIVE,
+  PREVIEW,
   EMPTY,
   MAX_CHAMBER_HEIGHT,
   SPEED,
   NUM_OF_COLS,
-  TOTAL_NUM_OF_COLS,
-  NEXT_SHAPE_COLS,
+  PREVIEW_COLS,
 } from "src/constants/constants";
 import createShapes, { getShapes } from "src/shapes/createShapes";
 import clone from "utils/clone";
@@ -251,7 +251,11 @@ const arraysAreEqual = <T>(a: T[][], b: T[][]) => {
   return true;
 };
 
-const animatedLogs = async (chamber: Chamber, speed: number) => {
+const animatedLogs = async (
+  chamber: Chamber,
+  previewChamber: Chamber,
+  speed: number
+) => {
   const shapeCoords = getShapeCoords(chamber);
   const highestShapeRow = Math.min(...shapeCoords.map(([r]) => r)); // topmost row of shape
 
@@ -262,7 +266,16 @@ const animatedLogs = async (chamber: Chamber, speed: number) => {
   }
   topRow = Math.max(0, topRow); // safety
 
-  const visibleRows = chamber.slice(topRow, topRow + MAX_CHAMBER_HEIGHT);
+  const gameVisibleRows = chamber.slice(topRow, topRow + MAX_CHAMBER_HEIGHT);
+  const previewVisibleRows = previewChamber.slice(
+    topRow,
+    topRow + MAX_CHAMBER_HEIGHT
+  );
+
+  let visibleRows: Chamber = [];
+  for (let i = 0; i < gameVisibleRows.length; i++) {
+    visibleRows[i] = [...gameVisibleRows[i], ...previewVisibleRows[i]];
+  }
 
   process.stdout.write("\x1b[H"); // move cursor to top-left
   process.stdout.write(
@@ -362,58 +375,72 @@ const addShape = (shapeIdx: number, chamber: Chamber): Chamber => {
   return chamber;
 };
 
-const addPreviewNextShape = (shapeIdx: number, chamber: Chamber): Chamber => {
-  const shape = clone(getShapes().get(shapeIdx)!);
-  const shapeLength = shape[0].length;
+const emptyPreviewArea = (previewChamber: Chamber) => {
+  for (let i = 0; i < previewChamber.length; i++) {
+    for (let j = 0; j < previewChamber[0].length; j++) {
+      previewChamber[i][j] = PREVIEW;
+    }
+  }
+};
 
-  // adds next shape to chamber
-  //1. check if next shape is 4x4
-  //if not it will pad empty cells to fill up cols with the difference
-
-  // for (let i = 0; i < shapeLength; i++) {
-  //   for (let j = 0; j < NEXT_SHAPE_COLS; j++) {
-  //     shape[i].push(EMPTY);
-  //   }
-  // }
+const addPreviewNextShape = (
+  shapeIdx: number,
+  previewChamber: Chamber
+): Chamber => {
+  const shape = getShapes().get(shapeIdx)!;
+  emptyPreviewArea(previewChamber);
 
   // add a row with the word 'NEXT'
   const nextWord = ["N", "E", "X", "T"];
-
   const nextRow = [];
 
-  for (let i = 0; i < NUM_OF_COLS; i++) {
-    nextRow.push(EMPTY);
-  }
-
-  nextRow.push(...nextWord);
-  const nextRowLength = nextRow.length;
-
-  for (let i = 0; i < shapeLength - nextRowLength; i++) {
-    i % 2 === 0 ? nextRow.unshift(EMPTY) : nextRow.push(EMPTY);
+  for (let i = 0; i < previewChamber[0].length; i++) {
+    if (i < nextWord.length) {
+      nextRow.push(nextWord[i]);
+    } else {
+      nextRow.push(PREVIEW);
+    }
   }
 
   shape.unshift(nextRow);
 
   // write the shape with the next word to the chamber
+  for (let i = 0; i < shape.length; i++) {
+    for (let j = 0; j < shape[0].length; j++) {
+      const previewChar = shape[i][j];
 
-  // for (let i = 0; i < shape.length; i++) {
-  //   for (let j = NUM_OF_COLS + 1; j < TOTAL_NUM_OF_COLS; j++) {
-  //     chamber[i][j] = shape[i][j];
-  //   }
-  // }
-  return chamber;
+      if (typeof previewChar !== "undefined") {
+        previewChamber[i][j] =
+          previewChar === LIVE || nextWord.includes(previewChar)
+            ? previewChar
+            : PREVIEW;
+      }
+    }
+  }
+
+  return previewChamber;
 };
 // it will create a 2D chamber of MAX_WIDTH and MAX_ROWS with empty cell
 // and add shape to the start
 const initializeChamber = (): Chamber => {
   let chamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT }).map(() => {
-    return Array.from({ length: TOTAL_NUM_OF_COLS }).map(() => EMPTY);
+    return Array.from({ length: NUM_OF_COLS }).map(() => EMPTY);
   });
 
   const shapeIdx = getShapeIdx();
   chamber = addShape(shapeIdx, chamber);
 
   return chamber;
+};
+
+const initializePreviewChamber = (): Chamber => {
+  let previewChamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT }).map(
+    () => {
+      return Array.from({ length: PREVIEW_COLS }).map(() => PREVIEW);
+    }
+  );
+
+  return previewChamber;
 };
 
 const checkFilledRows = (chamber: Chamber): Chamber => {
@@ -459,11 +486,15 @@ const checkIfPlayerLost = (chamber: Chamber, shapeIdx: number): boolean => {
 };
 
 const mainEngine = async () => {
-  let chamber: Chamber = [];
+  let gameChamber: Chamber = initializeChamber();
+  let previewChamber: Chamber = initializePreviewChamber();
+  let chamber: Chamber = [...gameChamber];
+
+  // for (let i = 0; i < gameChamber.length; i++) {
+  //   chamber[i] = [...gameChamber[i], ...previewChamber[i]];
+  // }
   const enableLogs = true;
   let curSpeed = SPEED;
-  chamber = initializeChamber();
-
   // Queue for key presses - process one per cycle
   const keyQueue: string[] = [];
   let lastMoveTime = 0;
@@ -532,7 +563,7 @@ const mainEngine = async () => {
   let newShapeIdx = getShapeIdx();
 
   while (true) {
-    chamber = addPreviewNextShape(newShapeIdx, chamber);
+    previewChamber = addPreviewNextShape(newShapeIdx, previewChamber);
 
     if (hasRested) {
       newShapeIdx = getShapeIdx();
@@ -553,10 +584,10 @@ const mainEngine = async () => {
 
       if (move === "rotate") {
         chamber = rotateShape(chamber);
-        enableLogs && (await animatedLogs(chamber, 20)); // Show rotation immediately
+        enableLogs && (await animatedLogs(chamber, previewChamber, 20)); // Show rotation immediately
       } else if (move === "<" || move === ">") {
         chamber = moveShapeWithGas(chamber, move);
-        enableLogs && (await animatedLogs(chamber, 10)); // Faster display for lateral movement
+        enableLogs && (await animatedLogs(chamber, previewChamber, 10)); // Faster display for lateral movement
       } else if (move === "down") {
         // Actually move the piece down when down key is pressed
         const shapeCoordsBefore = getShapeCoords(chamber);
@@ -564,7 +595,7 @@ const mainEngine = async () => {
         const shapeCoordsAfter = getShapeCoords(chamber);
 
         if (!arraysAreEqual(shapeCoordsBefore, shapeCoordsAfter)) {
-          enableLogs && (await animatedLogs(chamber, 10));
+          enableLogs && (await animatedLogs(chamber, previewChamber, 10));
         }
       }
 
@@ -584,7 +615,7 @@ const mainEngine = async () => {
 
       if (!arraysAreEqual(shapeCoordsBefore, shapeCoordsAfter)) {
         // Shape moved down successfully
-        enableLogs && (await animatedLogs(chamber, curSpeed));
+        enableLogs && (await animatedLogs(chamber, previewChamber, curSpeed));
       } else {
         // Could not move down → rest the shape
         chamber = restShape(chamber, shapeCoordsAfter);

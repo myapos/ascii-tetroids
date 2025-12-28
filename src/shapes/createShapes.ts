@@ -6,8 +6,8 @@ import verticalLine from "src/shapes/verticalLine";
 import square from "src/shapes/square";
 import leftSigma from "src/shapes/leftSigma";
 import rightSigma from "src/shapes/rightSigma";
-import { EMPTY, TOTAL_NUM_OF_COLS } from "src/constants/constants";
-import clone from "utils/clone";
+import { EMPTY, NUM_OF_COLS } from "src/constants/constants";
+import clone, { cloneMap } from "utils/clone";
 
 const padShape = (shape: Shape, targetWidth: number): Shape => {
   return clone(shape).map((row) => {
@@ -46,14 +46,14 @@ export const getShapes = (): Map<number, Shape> => {
     shapes.set(6, rightSigma);
   }
 
-  return shapes;
+  return cloneMap<number, Shape>(shapes);
 };
 
 const createShapes = (): Map<number, Shape> => {
   const shapes = getShapes();
-  // Pad all shapes to match TOTAL_NUM_OF_COLS
+  // Pad all shapes to match NUM_OF_COLS
   for (const [key, shape] of shapes.entries()) {
-    shapes.set(key, padShape(shape, TOTAL_NUM_OF_COLS));
+    shapes.set(key, padShape(shape, NUM_OF_COLS));
   }
 
   return shapes;
