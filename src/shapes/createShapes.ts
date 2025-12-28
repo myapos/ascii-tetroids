@@ -7,9 +7,10 @@ import square from "src/shapes/square";
 import leftSigma from "src/shapes/leftSigma";
 import rightSigma from "src/shapes/rightSigma";
 import { EMPTY, NUM_OF_COLS } from "src/constants/constants";
+import clone, { cloneMap } from "utils/clone";
 
 const padShape = (shape: Shape, targetWidth: number): Shape => {
-  return shape.map((row) => {
+  return clone(shape).map((row) => {
     const currentWidth = row.length;
     const totalPadding = targetWidth - currentWidth;
     const leftPad = Math.floor(totalPadding / 2);
@@ -23,16 +24,33 @@ const padShape = (shape: Shape, targetWidth: number): Shape => {
   });
 };
 
-const createShapes = (): Map<number, Shape> => {
-  const shapes = new Map<number, Shape>();
-  shapes.set(0, T);
-  shapes.set(1, leftL);
-  shapes.set(2, rightL);
-  shapes.set(3, verticalLine);
-  shapes.set(4, square);
-  shapes.set(5, leftSigma);
-  shapes.set(6, rightSigma);
+type shapeNames =
+  | "T"
+  | "leftL"
+  | "rightL"
+  | "verticalLine"
+  | "square"
+  | "leftSigma"
+  | "rightSigma";
 
+const shapes = new Map<number, Shape>();
+
+export const getShapes = (): Map<number, Shape> => {
+  if (shapes.size === 0) {
+    shapes.set(0, T);
+    shapes.set(1, leftL);
+    shapes.set(2, rightL);
+    shapes.set(3, verticalLine);
+    shapes.set(4, square);
+    shapes.set(5, leftSigma);
+    shapes.set(6, rightSigma);
+  }
+
+  return cloneMap<number, Shape>(shapes);
+};
+
+const createShapes = (): Map<number, Shape> => {
+  const shapes = getShapes();
   // Pad all shapes to match NUM_OF_COLS
   for (const [key, shape] of shapes.entries()) {
     shapes.set(key, padShape(shape, NUM_OF_COLS));

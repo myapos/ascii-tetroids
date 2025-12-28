@@ -1,4 +1,4 @@
-import type { Shape, Chamber, ShapeCoords, UserMove } from "src/types";
+import type { Chamber, ShapeCoords, UserMove } from "src/types";
 import isInBounds from "utils/isInBounds";
 import type { Pos } from "utils/types.ts";
 import rotateMatrix from "utils/rotateMatrix";
@@ -6,16 +6,17 @@ import {
   REST,
   FLOOR,
   LIVE,
+  PREVIEW,
   EMPTY,
   MAX_CHAMBER_HEIGHT,
   SPEED,
   NUM_OF_COLS,
+  PREVIEW_COLS,
 } from "src/constants/constants";
-import createShapes from "src/shapes/createShapes";
+import createShapes, { getShapes } from "src/shapes/createShapes";
+import clone from "utils/clone";
 
 const shapes = createShapes();
-
-const clone = (chamber: Chamber): Chamber => chamber.map((row) => [...row]);
 
 const getShapeCoords = (chamber: Chamber): ShapeCoords => {
   const shapeCoords: ShapeCoords = [];
@@ -250,10 +251,13 @@ const arraysAreEqual = <T>(a: T[][], b: T[][]) => {
   return true;
 };
 
-const animatedLogs = async (chamber: Chamber, speed: number) => {
+const animatedLogs = async (
+  chamber: Chamber,
+  previewChamber: Chamber,
+  speed: number
+) => {
   const shapeCoords = getShapeCoords(chamber);
   const highestShapeRow = Math.min(...shapeCoords.map(([r]) => r)); // topmost row of shape
-  const MAX_HEIGHT = 30;
 
   // window: from topRow to topRow + MAX_HEIGHT
   let topRow = Math.max(0, highestShapeRow - 2); // small margin above shape
@@ -262,7 +266,16 @@ const animatedLogs = async (chamber: Chamber, speed: number) => {
   }
   topRow = Math.max(0, topRow); // safety
 
-  const visibleRows = chamber.slice(topRow, topRow + MAX_CHAMBER_HEIGHT);
+  const gameVisibleRows = chamber.slice(topRow, topRow + MAX_CHAMBER_HEIGHT);
+  const previewVisibleRows = previewChamber.slice(
+    topRow,
+    topRow + MAX_CHAMBER_HEIGHT
+  );
+
+  let visibleRows: Chamber = [];
+  for (let i = 0; i < gameVisibleRows.length; i++) {
+    visibleRows[i] = [...gameVisibleRows[i], ...previewVisibleRows[i]];
+  }
 
   process.stdout.write("\x1b[H"); // move cursor to top-left
   process.stdout.write(
@@ -361,22 +374,73 @@ const addShape = (shapeIdx: number, chamber: Chamber): Chamber => {
   chamber.unshift(...shape);
   return chamber;
 };
+
+const emptyPreviewArea = (previewChamber: Chamber) => {
+  for (let i = 0; i < previewChamber.length; i++) {
+    for (let j = 0; j < previewChamber[0].length; j++) {
+      previewChamber[i][j] = PREVIEW;
+    }
+  }
+};
+
+const addPreviewNextShape = (
+  shapeIdx: number,
+  previewChamber: Chamber
+): Chamber => {
+  const shape = getShapes().get(shapeIdx)!;
+  emptyPreviewArea(previewChamber);
+
+  // add a row with the word 'NEXT'
+  const nextWord = ["N", "E", "X", "T"];
+  const nextRow = [];
+
+  for (let i = 0; i < previewChamber[0].length; i++) {
+    if (i < nextWord.length) {
+      nextRow.push(nextWord[i]);
+    } else {
+      nextRow.push(PREVIEW);
+    }
+  }
+
+  shape.unshift(nextRow);
+
+  // write the shape with the next word to the chamber
+  for (let i = 0; i < shape.length; i++) {
+    for (let j = 0; j < shape[0].length; j++) {
+      const previewChar = shape[i][j];
+
+      if (typeof previewChar !== "undefined") {
+        previewChamber[i][j] =
+          previewChar === LIVE || nextWord.includes(previewChar)
+            ? previewChar
+            : PREVIEW;
+      }
+    }
+  }
+
+  return previewChamber;
+};
 // it will create a 2D chamber of MAX_WIDTH and MAX_ROWS with empty cell
 // and add shape to the start
 const initializeChamber = (): Chamber => {
   let chamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT }).map(() => {
     return Array.from({ length: NUM_OF_COLS }).map(() => EMPTY);
   });
-  // for (let i = 0; i < MAX_CHAMBER_HEIGHT; i++) {
-  //   for (let j = 0; j < NUM_OF_COLS; j++) {
-  //     chamber[i][j] = EMPTY;
-  //   }
-  // }
 
   const shapeIdx = getShapeIdx();
   chamber = addShape(shapeIdx, chamber);
 
   return chamber;
+};
+
+const initializePreviewChamber = (): Chamber => {
+  let previewChamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT }).map(
+    () => {
+      return Array.from({ length: PREVIEW_COLS }).map(() => PREVIEW);
+    }
+  );
+
+  return previewChamber;
 };
 
 const checkFilledRows = (chamber: Chamber): Chamber => {
@@ -422,11 +486,12 @@ const checkIfPlayerLost = (chamber: Chamber, shapeIdx: number): boolean => {
 };
 
 const mainEngine = async () => {
-  let chamber: Chamber = [];
+  let gameChamber: Chamber = initializeChamber();
+  let previewChamber: Chamber = initializePreviewChamber();
+  let chamber: Chamber = [...gameChamber];
+
   const enableLogs = true;
   let curSpeed = SPEED;
-  chamber = initializeChamber();
-
   // Queue for key presses - process one per cycle
   const keyQueue: string[] = [];
   let lastMoveTime = 0;
@@ -436,60 +501,72 @@ const mainEngine = async () => {
   const DEBOUNCE_TIME = 0; // ms between same key presses
   let isPaused = false; // Pause state
 
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
+  const isInDebugMode = typeof process.stdin.setRawMode === "undefined";
 
-  process.stdin.on("data", (key) => {
-    if (key === "\u0003") {
-      // Ctrl+C to exit
-      process.exit();
-    }
+  if (!isInDebugMode) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.setEncoding("utf8");
 
-    // Handle pause/resume with 'p' or space key
-    if (key === "p" || key === "P" || key === " ") {
-      isPaused = !isPaused;
-      if (isPaused) {
-        console.clear();
-        console.log("GAME PAUSED - Press 'p' or space to resume");
+    process.stdin.on("data", (key) => {
+      if (key === "\u0003") {
+        // Ctrl+C to exit
+        process.exit();
       }
-      return;
-    }
 
-    const now = Date.now();
-    let keyType = "";
-
-    if (key === "\u001b[D") {
-      keyType = "<";
-    } else if (key === "\u001b[C") {
-      keyType = ">";
-    } else if (key === "\u001b[B") {
-      keyType = "down";
-    } else if (key === "\u001b[A") {
-      keyType = "rotate";
-    }
-
-    // Debounce: only add key if enough time passed since last press of same key
-    if (
-      keyType &&
-      (!lastKeyPressTime[keyType] ||
-        now - lastKeyPressTime[keyType] > DEBOUNCE_TIME)
-    ) {
-      lastKeyPressTime[keyType] = now;
-
-      // Only add to queue if it's not already full
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push(keyType);
+      // Handle pause/resume with 'p' or space key
+      if (key === "p" || key === "P" || key === " ") {
+        isPaused = !isPaused;
+        if (isPaused) {
+          console.clear();
+          console.log("GAME PAUSED - Press 'p' or space to resume");
+        }
+        return;
       }
-    }
-  });
 
+      const now = Date.now();
+      let keyType = "";
+
+      if (key === "\u001b[D") {
+        keyType = "<";
+      } else if (key === "\u001b[C") {
+        keyType = ">";
+      } else if (key === "\u001b[B") {
+        keyType = "down";
+      } else if (key === "\u001b[A") {
+        keyType = "rotate";
+      }
+
+      // Debounce: only add key if enough time passed since last press of same key
+      if (
+        keyType &&
+        (!lastKeyPressTime[keyType] ||
+          now - lastKeyPressTime[keyType] > DEBOUNCE_TIME)
+      ) {
+        lastKeyPressTime[keyType] = now;
+
+        // Only add to queue if it's not already full
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push(keyType);
+        }
+      }
+    });
+  }
   // clear console on start
   console.clear();
 
   let lastGravityTime = 0;
+  let hasRested: boolean = false;
+  let newShapeIdx = getShapeIdx();
 
   while (true) {
+    previewChamber = addPreviewNextShape(newShapeIdx, previewChamber);
+
+    if (hasRested) {
+      newShapeIdx = getShapeIdx();
+      // reset
+      hasRested = false;
+    }
     // Skip game logic if paused
     if (isPaused) {
       await new Promise((res) => setTimeout(res, 50)); // Small delay to prevent CPU spinning
@@ -504,10 +581,10 @@ const mainEngine = async () => {
 
       if (move === "rotate") {
         chamber = rotateShape(chamber);
-        enableLogs && (await animatedLogs(chamber, 20)); // Show rotation immediately
+        enableLogs && (await animatedLogs(chamber, previewChamber, 20)); // Show rotation immediately
       } else if (move === "<" || move === ">") {
         chamber = moveShapeWithGas(chamber, move);
-        enableLogs && (await animatedLogs(chamber, 10)); // Faster display for lateral movement
+        enableLogs && (await animatedLogs(chamber, previewChamber, 10)); // Faster display for lateral movement
       } else if (move === "down") {
         // Actually move the piece down when down key is pressed
         const shapeCoordsBefore = getShapeCoords(chamber);
@@ -515,7 +592,7 @@ const mainEngine = async () => {
         const shapeCoordsAfter = getShapeCoords(chamber);
 
         if (!arraysAreEqual(shapeCoordsBefore, shapeCoordsAfter)) {
-          enableLogs && (await animatedLogs(chamber, 10));
+          enableLogs && (await animatedLogs(chamber, previewChamber, 10));
         }
       }
 
@@ -535,15 +612,16 @@ const mainEngine = async () => {
 
       if (!arraysAreEqual(shapeCoordsBefore, shapeCoordsAfter)) {
         // Shape moved down successfully
-        enableLogs && (await animatedLogs(chamber, curSpeed));
+        enableLogs && (await animatedLogs(chamber, previewChamber, curSpeed));
       } else {
         // Could not move down → rest the shape
         chamber = restShape(chamber, shapeCoordsAfter);
-        const newShapeIdx = getShapeIdx();
+        // const newShapeIdx = getShapeIdx();
         chamber = addShape(newShapeIdx, chamber);
         keyQueue.length = 0; // Clear the queue when new shape appears
         chamber = checkFilledRows(chamber);
         const lost = checkIfPlayerLost(chamber, newShapeIdx);
+        hasRested = true;
 
         if (lost) {
           console.log("YOU LOST!! Try again");
