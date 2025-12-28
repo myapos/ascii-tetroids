@@ -490,9 +490,6 @@ const mainEngine = async () => {
   let previewChamber: Chamber = initializePreviewChamber();
   let chamber: Chamber = [...gameChamber];
 
-  // for (let i = 0; i < gameChamber.length; i++) {
-  //   chamber[i] = [...gameChamber[i], ...previewChamber[i]];
-  // }
   const enableLogs = true;
   let curSpeed = SPEED;
   // Queue for key presses - process one per cycle
