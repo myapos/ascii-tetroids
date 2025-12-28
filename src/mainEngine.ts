@@ -1,4 +1,4 @@
-import type { Shape, Chamber, ShapeCoords, UserMove } from "src/types";
+import type { Chamber, ShapeCoords, UserMove } from "src/types";
 import isInBounds from "utils/isInBounds";
 import type { Pos } from "utils/types.ts";
 import rotateMatrix from "utils/rotateMatrix";
@@ -10,12 +10,13 @@ import {
   MAX_CHAMBER_HEIGHT,
   SPEED,
   NUM_OF_COLS,
+  TOTAL_NUM_OF_COLS,
+  NEXT_SHAPE_COLS,
 } from "src/constants/constants";
-import createShapes from "src/shapes/createShapes";
+import createShapes, { getShapes } from "src/shapes/createShapes";
+import clone from "utils/clone";
 
 const shapes = createShapes();
-
-const clone = (chamber: Chamber): Chamber => chamber.map((row) => [...row]);
 
 const getShapeCoords = (chamber: Chamber): ShapeCoords => {
   const shapeCoords: ShapeCoords = [];
@@ -253,7 +254,6 @@ const arraysAreEqual = <T>(a: T[][], b: T[][]) => {
 const animatedLogs = async (chamber: Chamber, speed: number) => {
   const shapeCoords = getShapeCoords(chamber);
   const highestShapeRow = Math.min(...shapeCoords.map(([r]) => r)); // topmost row of shape
-  const MAX_HEIGHT = 30;
 
   // window: from topRow to topRow + MAX_HEIGHT
   let topRow = Math.max(0, highestShapeRow - 2); // small margin above shape
@@ -361,17 +361,54 @@ const addShape = (shapeIdx: number, chamber: Chamber): Chamber => {
   chamber.unshift(...shape);
   return chamber;
 };
+
+const addPreviewNextShape = (shapeIdx: number, chamber: Chamber): Chamber => {
+  const shape = clone(getShapes().get(shapeIdx)!);
+  const shapeLength = shape[0].length;
+
+  // adds next shape to chamber
+  //1. check if next shape is 4x4
+  //if not it will pad empty cells to fill up cols with the difference
+
+  // for (let i = 0; i < shapeLength; i++) {
+  //   for (let j = 0; j < NEXT_SHAPE_COLS; j++) {
+  //     shape[i].push(EMPTY);
+  //   }
+  // }
+
+  // add a row with the word 'NEXT'
+  const nextWord = ["N", "E", "X", "T"];
+
+  const nextRow = [];
+
+  for (let i = 0; i < NUM_OF_COLS; i++) {
+    nextRow.push(EMPTY);
+  }
+
+  nextRow.push(...nextWord);
+  const nextRowLength = nextRow.length;
+
+  for (let i = 0; i < shapeLength - nextRowLength; i++) {
+    i % 2 === 0 ? nextRow.unshift(EMPTY) : nextRow.push(EMPTY);
+  }
+
+  shape.unshift(nextRow);
+
+  // write the shape with the next word to the chamber
+
+  // for (let i = 0; i < shape.length; i++) {
+  //   for (let j = NUM_OF_COLS + 1; j < TOTAL_NUM_OF_COLS; j++) {
+  //     chamber[i][j] = shape[i][j];
+  //   }
+  // }
+  return chamber;
+};
 // it will create a 2D chamber of MAX_WIDTH and MAX_ROWS with empty cell
 // and add shape to the start
 const initializeChamber = (): Chamber => {
   let chamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT }).map(() => {
-    return Array.from({ length: NUM_OF_COLS }).map(() => EMPTY);
+    return Array.from({ length: TOTAL_NUM_OF_COLS }).map(() => EMPTY);
   });
-  // for (let i = 0; i < MAX_CHAMBER_HEIGHT; i++) {
-  //   for (let j = 0; j < NUM_OF_COLS; j++) {
-  //     chamber[i][j] = EMPTY;
-  //   }
-  // }
 
   const shapeIdx = getShapeIdx();
   chamber = addShape(shapeIdx, chamber);
@@ -436,60 +473,72 @@ const mainEngine = async () => {
   const DEBOUNCE_TIME = 0; // ms between same key presses
   let isPaused = false; // Pause state
 
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
+  const isInDebugMode = typeof process.stdin.setRawMode === "undefined";
 
-  process.stdin.on("data", (key) => {
-    if (key === "\u0003") {
-      // Ctrl+C to exit
-      process.exit();
-    }
+  if (!isInDebugMode) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.setEncoding("utf8");
 
-    // Handle pause/resume with 'p' or space key
-    if (key === "p" || key === "P" || key === " ") {
-      isPaused = !isPaused;
-      if (isPaused) {
-        console.clear();
-        console.log("GAME PAUSED - Press 'p' or space to resume");
+    process.stdin.on("data", (key) => {
+      if (key === "\u0003") {
+        // Ctrl+C to exit
+        process.exit();
       }
-      return;
-    }
 
-    const now = Date.now();
-    let keyType = "";
-
-    if (key === "\u001b[D") {
-      keyType = "<";
-    } else if (key === "\u001b[C") {
-      keyType = ">";
-    } else if (key === "\u001b[B") {
-      keyType = "down";
-    } else if (key === "\u001b[A") {
-      keyType = "rotate";
-    }
-
-    // Debounce: only add key if enough time passed since last press of same key
-    if (
-      keyType &&
-      (!lastKeyPressTime[keyType] ||
-        now - lastKeyPressTime[keyType] > DEBOUNCE_TIME)
-    ) {
-      lastKeyPressTime[keyType] = now;
-
-      // Only add to queue if it's not already full
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push(keyType);
+      // Handle pause/resume with 'p' or space key
+      if (key === "p" || key === "P" || key === " ") {
+        isPaused = !isPaused;
+        if (isPaused) {
+          console.clear();
+          console.log("GAME PAUSED - Press 'p' or space to resume");
+        }
+        return;
       }
-    }
-  });
 
+      const now = Date.now();
+      let keyType = "";
+
+      if (key === "\u001b[D") {
+        keyType = "<";
+      } else if (key === "\u001b[C") {
+        keyType = ">";
+      } else if (key === "\u001b[B") {
+        keyType = "down";
+      } else if (key === "\u001b[A") {
+        keyType = "rotate";
+      }
+
+      // Debounce: only add key if enough time passed since last press of same key
+      if (
+        keyType &&
+        (!lastKeyPressTime[keyType] ||
+          now - lastKeyPressTime[keyType] > DEBOUNCE_TIME)
+      ) {
+        lastKeyPressTime[keyType] = now;
+
+        // Only add to queue if it's not already full
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push(keyType);
+        }
+      }
+    });
+  }
   // clear console on start
   console.clear();
 
   let lastGravityTime = 0;
+  let hasRested: boolean = false;
+  let newShapeIdx = getShapeIdx();
 
   while (true) {
+    chamber = addPreviewNextShape(newShapeIdx, chamber);
+
+    if (hasRested) {
+      newShapeIdx = getShapeIdx();
+      // reset
+      hasRested = false;
+    }
     // Skip game logic if paused
     if (isPaused) {
       await new Promise((res) => setTimeout(res, 50)); // Small delay to prevent CPU spinning
@@ -539,11 +588,12 @@ const mainEngine = async () => {
       } else {
         // Could not move down → rest the shape
         chamber = restShape(chamber, shapeCoordsAfter);
-        const newShapeIdx = getShapeIdx();
+        // const newShapeIdx = getShapeIdx();
         chamber = addShape(newShapeIdx, chamber);
         keyQueue.length = 0; // Clear the queue when new shape appears
         chamber = checkFilledRows(chamber);
         const lost = checkIfPlayerLost(chamber, newShapeIdx);
+        hasRested = true;
 
         if (lost) {
           console.log("YOU LOST!! Try again");

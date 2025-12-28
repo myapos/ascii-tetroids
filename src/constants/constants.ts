@@ -37,3 +37,5 @@ export const EMPTY = ".";
 export const MAX_CHAMBER_HEIGHT = 25;
 export const NUM_OF_COLS = 15;
 export const SPEED = 250; //ms
+export const NEXT_SHAPE_COLS = 5;
+export const TOTAL_NUM_OF_COLS = NUM_OF_COLS + NEXT_SHAPE_COLS;
