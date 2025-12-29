@@ -32,3 +32,4 @@ bun test
   - better game control
   - splash screens
   - back and forth, retry handling?
+  - database, scores, extra output on preview
