@@ -19,3 +19,16 @@ bun run index.ts
 ```bash
 bun test
 ```
+
+### TODOS
+
+- clean up
+- refactor/organization
+  - not used utils removal
+  - not used types removal
+- use class
+- Features
+  - records
+  - better game control
+  - splash screens
+  - back and forth, retry handling?
