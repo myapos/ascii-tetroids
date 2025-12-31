@@ -88,6 +88,9 @@ This approach provides:
 - refactor/organization
   - not used utils removal
   - not used types removal
+- terminal issues
+  - frame leaks and overflows --> OK
+  - flickering --> OK
 - use class
 - Features
   - records
