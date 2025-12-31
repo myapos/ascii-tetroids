@@ -91,7 +91,9 @@ This approach provides:
 - terminal issues
   - frame leaks and overflows --> OK
   - flickering --> OK
-- use class
+- use class for code orgnization,
+- add floor and side edges --> OK
+- chalk ?
 - Features
   - records
   - better game control --> OK
@@ -101,3 +103,4 @@ This approach provides:
   - check if all columns cells has support
     - if not then move all columns with no support down until they find
   - colors in ascii chars
+  - add auto mode

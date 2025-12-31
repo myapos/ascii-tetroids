@@ -6,20 +6,23 @@ import verticalLine from "src/shapes/verticalLine";
 import square from "src/shapes/square";
 import leftSigma from "src/shapes/leftSigma";
 import rightSigma from "src/shapes/rightSigma";
-import { EMPTY, NUM_OF_COLS } from "src/constants/constants";
+import { SIDE_WALL, EMPTY, NUM_OF_COLS } from "src/constants/constants";
 import clone, { cloneMap } from "utils/clone";
 
 const padShape = (shape: Shape, targetWidth: number): Shape => {
   return clone(shape).map((row) => {
     const currentWidth = row.length;
-    const totalPadding = targetWidth - currentWidth;
+    // remove two for side walls
+    const totalPadding = targetWidth - currentWidth - 2;
     const leftPad = Math.floor(totalPadding / 2);
     const rightPad = totalPadding - leftPad;
 
     return [
+      SIDE_WALL,
       ...Array(leftPad).fill(EMPTY),
       ...row,
       ...Array(rightPad).fill(EMPTY),
+      SIDE_WALL,
     ];
   });
 };

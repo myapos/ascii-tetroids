@@ -2,9 +2,11 @@ import type { Chamber, ShapeCoords, UserMove } from "src/types";
 import isInBounds from "utils/isInBounds";
 import type { Pos } from "utils/types.ts";
 import rotateMatrix from "utils/rotateMatrix";
+import chalk from "chalk";
 import {
   REST,
   FLOOR,
+  SIDE_WALL,
   LIVE,
   PREVIEW,
   EMPTY,
@@ -256,6 +258,29 @@ const hideCursor = () => process.stdout.write("\x1b[?25l");
 const showCursor = () => process.stdout.write("\x1b[?25h");
 const enterAltScreen = () => process.stdout.write("\x1b[?1049h");
 const exitAltScreen = () => process.stdout.write("\x1b[?1049l");
+const colorizeCell = (cell: string): string => {
+  switch (cell) {
+    case LIVE:
+      return chalk.greenBright(cell);
+    case REST:
+      return chalk.white(cell);
+    case FLOOR:
+      return chalk.magentaBright(cell);
+    case SIDE_WALL:
+      return chalk.blue(cell);
+    case EMPTY:
+      return chalk.gray(cell);
+    case PREVIEW:
+      return chalk.gray(cell);
+    case "N":
+    case "E":
+    case "X":
+    case "T":
+      return chalk.yellowBright(cell);
+    default:
+      return cell;
+  }
+};
 
 const animatedLogs = async (
   chamber: Chamber,
@@ -266,7 +291,7 @@ const animatedLogs = async (
 
   moveCursorHome();
   process.stdout.write(
-    visibleRows.map((row) => row.join("")).join("\n") + "\n"
+    visibleRows.map((row) => row.map(colorizeCell).join("")).join("\n") + "\n"
   );
 
   await new Promise((res) => setTimeout(res, GRAVITY_SPEED));
@@ -410,9 +435,21 @@ const addPreviewNextShape = (
 // it will create a 2D chamber of MAX_WIDTH and MAX_ROWS with empty cell
 // and add shape to the start
 const initializeChamber = (): Chamber => {
-  let chamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT }).map(() => {
-    return Array.from({ length: NUM_OF_COLS }).map(() => EMPTY);
-  });
+  let chamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT - 1 }).map(
+    () => {
+      return Array.from({ length: NUM_OF_COLS }).map((_, colIdx: number) => {
+        const isLeftSide = colIdx === 0;
+        const isRightSide = colIdx === NUM_OF_COLS - 1;
+        if (isLeftSide || isRightSide) return SIDE_WALL;
+        return EMPTY;
+      });
+    }
+  );
+
+  // add FLOOR
+  const floorRow = Array.from({ length: NUM_OF_COLS }).map(() => FLOOR);
+
+  chamber.push(floorRow);
 
   const shapeIdx = getShapeIdx();
   chamber = addShape(shapeIdx, chamber);
@@ -439,7 +476,8 @@ const checkFilledRows = (chamber: Chamber): Chamber => {
       }
     }
 
-    const isFilledRow = filledCells === chamber[0].length;
+    // remove the side edges
+    const isFilledRow = filledCells === chamber[0].length - 2;
     if (isFilledRow) {
       //1. remove row from that place
       chamber.splice(i, 1);
@@ -581,7 +619,7 @@ const mainEngine = async () => {
         if (lost) {
           exitAltScreen();
           showCursor();
-          console.log("YOU LOST!! Try again");
+          console.log(chalk.yellowBright("YOU LOST!! Try again"));
           break;
         }
       }
