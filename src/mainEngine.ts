@@ -433,8 +433,8 @@ const addPreviewNextShape = (
   shape.unshift(nextRow);
 
   // add an empty row
-
   shape.push(emptyRow);
+
   // add a row with the word 'LEVEL'
   const levelWord = ["L", "E", "V", "E", "L"];
   const levelRow = [];
