@@ -5,6 +5,7 @@ import rotateMatrix from "utils/rotateMatrix";
 import {
   REST,
   FLOOR,
+  SIDE_WALL,
   LIVE,
   PREVIEW,
   EMPTY,
@@ -410,9 +411,21 @@ const addPreviewNextShape = (
 // it will create a 2D chamber of MAX_WIDTH and MAX_ROWS with empty cell
 // and add shape to the start
 const initializeChamber = (): Chamber => {
-  let chamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT }).map(() => {
-    return Array.from({ length: NUM_OF_COLS }).map(() => EMPTY);
-  });
+  let chamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT - 1 }).map(
+    () => {
+      return Array.from({ length: NUM_OF_COLS }).map((_, colIdx: number) => {
+        const isLeftSide = colIdx === 0;
+        const isRightSide = colIdx === NUM_OF_COLS - 1;
+        if (isLeftSide || isRightSide) return SIDE_WALL;
+        return EMPTY;
+      });
+    }
+  );
+
+  // add FLOOR
+  const floorRow = Array.from({ length: NUM_OF_COLS }).map(() => FLOOR);
+
+  chamber.push(floorRow);
 
   const shapeIdx = getShapeIdx();
   chamber = addShape(shapeIdx, chamber);
@@ -439,7 +452,8 @@ const checkFilledRows = (chamber: Chamber): Chamber => {
       }
     }
 
-    const isFilledRow = filledCells === chamber[0].length;
+    // remove the side edges
+    const isFilledRow = filledCells === chamber[0].length - 2;
     if (isFilledRow) {
       //1. remove row from that place
       chamber.splice(i, 1);
