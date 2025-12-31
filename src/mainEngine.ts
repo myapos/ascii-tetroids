@@ -2,6 +2,7 @@ import type { Chamber, ShapeCoords, UserMove } from "src/types";
 import isInBounds from "utils/isInBounds";
 import type { Pos } from "utils/types.ts";
 import rotateMatrix from "utils/rotateMatrix";
+import chalk from "chalk";
 import {
   REST,
   FLOOR,
@@ -257,6 +258,29 @@ const hideCursor = () => process.stdout.write("\x1b[?25l");
 const showCursor = () => process.stdout.write("\x1b[?25h");
 const enterAltScreen = () => process.stdout.write("\x1b[?1049h");
 const exitAltScreen = () => process.stdout.write("\x1b[?1049l");
+const colorizeCell = (cell: string): string => {
+  switch (cell) {
+    case LIVE:
+      return chalk.greenBright(cell); // Active piece - high contrast, vibrant
+    case REST:
+      return chalk.white(cell); // Placed blocks - static, locked in place
+    case FLOOR:
+      return chalk.magentaBright(cell); // Foundation - strong boundary
+    case SIDE_WALL:
+      return chalk.blue(cell); // Walls - visible but not overwhelming
+    case EMPTY:
+      return chalk.gray(cell); // Background - balanced visibility
+    case PREVIEW:
+      return chalk.gray(cell); // Preview area - subtle background
+    case "N":
+    case "E":
+    case "X":
+    case "T":
+      return chalk.yellowBright(cell); // NEXT label - high contrast, warm
+    default:
+      return cell;
+  }
+};
 
 const animatedLogs = async (
   chamber: Chamber,
@@ -267,7 +291,7 @@ const animatedLogs = async (
 
   moveCursorHome();
   process.stdout.write(
-    visibleRows.map((row) => row.join("")).join("\n") + "\n"
+    visibleRows.map((row) => row.map(colorizeCell).join("")).join("\n") + "\n"
   );
 
   await new Promise((res) => setTimeout(res, GRAVITY_SPEED));
@@ -595,7 +619,7 @@ const mainEngine = async () => {
         if (lost) {
           exitAltScreen();
           showCursor();
-          console.log("YOU LOST!! Try again");
+          console.log(chalk.yellowBright("YOU LOST!! Try again"));
           break;
         }
       }

@@ -1,6 +1,6 @@
-export const LIVE = "@";
+export const LIVE = "O";
 export const REST = "#";
-export const FLOOR = "-";
+export const FLOOR = "=";
 export const SIDE_WALL = "|";
 export const EMPTY = ".";
 export const PREVIEW = " ";

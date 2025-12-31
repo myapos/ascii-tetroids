@@ -93,6 +93,7 @@ This approach provides:
   - flickering --> OK
 - use class for code orgnization,
 - add floor and side edges --> OK
+- chalk ?
 - Features
   - records
   - better game control --> OK
