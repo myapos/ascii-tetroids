@@ -251,6 +251,12 @@ const arraysAreEqual = <T>(a: T[][], b: T[][]) => {
   return true;
 };
 
+const moveCursorHome = () => process.stdout.write("\x1b[H");
+const hideCursor = () => process.stdout.write("\x1b[?25l");
+const showCursor = () => process.stdout.write("\x1b[?25h");
+const enterAltScreen = () => process.stdout.write("\x1b[?1049h");
+const exitAltScreen = () => process.stdout.write("\x1b[?1049l");
+
 const animatedLogs = async (
   chamber: Chamber,
   previewChamber: Chamber,
@@ -258,7 +264,7 @@ const animatedLogs = async (
 ) => {
   const visibleRows = chamber.map((row, i) => [...row, ...previewChamber[i]]);
 
-  process.stdout.write("\x1b[H"); // move cursor to top-left
+  moveCursorHome();
   process.stdout.write(
     visibleRows.map((row) => row.join("")).join("\n") + "\n"
   );
@@ -518,8 +524,9 @@ const mainEngine = async () => {
       }
     });
   }
-  // clear console on start
-  console.clear();
+  // Enter alternate screen buffer and hide cursor
+  enterAltScreen();
+  hideCursor();
 
   let lastGravityTime = 0;
   let hasRested: boolean = false;
@@ -572,6 +579,8 @@ const mainEngine = async () => {
         hasRested = true;
 
         if (lost) {
+          exitAltScreen();
+          showCursor();
           console.log("YOU LOST!! Try again");
           break;
         }
