@@ -16,6 +16,7 @@ import {
   PREVIEW_COLS,
   GRAVITY_LEVEL_DIFF,
   LEVEL_LINES_DIFF,
+  MAXIMUM_SPEED,
 } from "src/constants/constants";
 import createShapes, { getShapes } from "src/shapes/createShapes";
 import clone from "utils/clone";
@@ -663,7 +664,10 @@ const mainEngine = async () => {
           totalNumOfFilledRows >= LEVEL_LINES_DIFF;
 
         if (shouldIncreaseGravityLevel) {
-          curGravitySpeed -= GRAVITY_LEVEL_DIFF;
+          curGravitySpeed = Math.max(
+            MAXIMUM_SPEED,
+            curGravitySpeed - GRAVITY_LEVEL_DIFF
+          );
           totalNumOfFilledRows = totalNumOfFilledRows % LEVEL_LINES_DIFF; // reset
           curLevel++;
         }
