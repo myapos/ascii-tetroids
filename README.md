@@ -93,13 +93,14 @@ This approach provides:
   - flickering --> OK
 - use class for code orgnization,
 - add floor and side edges --> OK
-- chalk ?
+- chalk --> OK
 - Features
-  - records
+  - records SQLite?
   - better game control --> OK
   - splash screens
   - back and forth, retry handling?
   - database, scores, extra output on preview
+  - levels
   - check if all columns cells has support
     - if not then move all columns with no support down until they find
   - colors in ascii chars

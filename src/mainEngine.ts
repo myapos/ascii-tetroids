@@ -14,6 +14,8 @@ import {
   GRAVITY_SPEED,
   NUM_OF_COLS,
   PREVIEW_COLS,
+  GRAVITY_LEVEL_DIFF,
+  LEVEL_LINES_DIFF,
 } from "src/constants/constants";
 import createShapes, { getShapes } from "src/shapes/createShapes";
 import clone from "utils/clone";
@@ -259,6 +261,10 @@ const showCursor = () => process.stdout.write("\x1b[?25h");
 const enterAltScreen = () => process.stdout.write("\x1b[?1049h");
 const exitAltScreen = () => process.stdout.write("\x1b[?1049l");
 const colorizeCell = (cell: string): string => {
+  if (Number.isSafeInteger(parseInt(cell))) {
+    return chalk.yellowBright(cell);
+  }
+
   switch (cell) {
     case LIVE:
       return chalk.greenBright(cell);
@@ -276,6 +282,11 @@ const colorizeCell = (cell: string): string => {
     case "E":
     case "X":
     case "T":
+    case "L":
+    case "E":
+    case "V":
+    case "E":
+    case "L":
       return chalk.yellowBright(cell);
     default:
       return cell;
@@ -285,7 +296,7 @@ const colorizeCell = (cell: string): string => {
 const animatedLogs = async (
   chamber: Chamber,
   previewChamber: Chamber,
-  GRAVITY_SPEED: number
+  frameRate: number
 ) => {
   const visibleRows = chamber.map((row, i) => [...row, ...previewChamber[i]]);
 
@@ -294,7 +305,7 @@ const animatedLogs = async (
     visibleRows.map((row) => row.map(colorizeCell).join("")).join("\n") + "\n"
   );
 
-  await new Promise((res) => setTimeout(res, GRAVITY_SPEED));
+  await new Promise((res) => setTimeout(res, frameRate));
 };
 
 const getShapeIdx = () => Math.floor(Math.random() * shapes.size);
@@ -397,8 +408,13 @@ const emptyPreviewArea = (previewChamber: Chamber) => {
 
 const addPreviewNextShape = (
   shapeIdx: number,
-  previewChamber: Chamber
+  previewChamber: Chamber,
+  curLevel: number
 ): Chamber => {
+  const emptyRow = [
+    ...Array.from({ length: previewChamber[0].length }).map(() => PREVIEW),
+  ];
+
   const shape = getShapes().get(shapeIdx)!;
   emptyPreviewArea(previewChamber);
 
@@ -416,15 +432,38 @@ const addPreviewNextShape = (
 
   shape.unshift(nextRow);
 
+  // add an empty row
+
+  shape.push(emptyRow);
+  // add a row with the word 'LEVEL'
+  const levelWord = ["L", "E", "V", "E", "L"];
+  const levelRow = [];
+
+  for (let i = 0; i < previewChamber[0].length; i++) {
+    if (i < nextWord.length) {
+      levelRow.push(levelWord[i]);
+    } else {
+      levelRow.push(PREVIEW);
+    }
+  }
+
+  shape.push(levelWord);
+  // add cur level
+  const curLevelInfo = [curLevel.toString()];
+  shape.push(curLevelInfo);
+
   // write the shape with the next word to the chamber
   for (let i = 0; i < shape.length; i++) {
-    for (let j = 0; j < shape[0].length; j++) {
-      const previewChar = shape[i][j];
+    for (let j = 0; j < shape[i].length; j++) {
+      const shapeChar = shape[i][j];
 
-      if (typeof previewChar !== "undefined") {
+      if (typeof shapeChar !== "undefined") {
         previewChamber[i][j] =
-          previewChar === LIVE || nextWord.includes(previewChar)
-            ? previewChar
+          shapeChar === LIVE ||
+          nextWord.includes(shapeChar) ||
+          levelWord.includes(shapeChar) ||
+          Number.isSafeInteger(parseInt(shapeChar))
+            ? shapeChar
             : PREVIEW;
       }
     }
@@ -467,7 +506,10 @@ const initializePreviewChamber = (): Chamber => {
   return previewChamber;
 };
 
-const checkFilledRows = (chamber: Chamber): Chamber => {
+const checkFilledRows = (
+  chamber: Chamber
+): { chamber: Chamber; numOfFilledRows: number } => {
+  let numOfFilledRows = 0;
   for (let i = 0; i < chamber.length; i++) {
     let filledCells = 0;
     for (let j = 0; j < chamber[0].length; j++) {
@@ -477,8 +519,9 @@ const checkFilledRows = (chamber: Chamber): Chamber => {
     }
 
     // remove the side edges
-    const isFilledRow = filledCells === chamber[0].length - 2;
-    if (isFilledRow) {
+    const isFilled = filledCells === chamber[0].length - 2;
+    if (isFilled) {
+      numOfFilledRows++;
       //1. remove row from that place
       chamber.splice(i, 1);
       //2. add an empty row to the beginning
@@ -489,7 +532,7 @@ const checkFilledRows = (chamber: Chamber): Chamber => {
     }
   }
 
-  return clone(chamber);
+  return { numOfFilledRows, chamber: clone(chamber) };
 };
 
 const getTowerHeight = (chamber: Chamber) => {
@@ -519,6 +562,9 @@ const mainEngine = async () => {
   const keyQueue: string[] = [];
   const MAX_QUEUE_SIZE = 2000;
   let isPaused = false; // Pause state
+  let totalNumOfFilledRows = 0;
+  let curGravitySpeed = GRAVITY_SPEED;
+  let curLevel = 1;
 
   const isInDebugMode = typeof process.stdin.setRawMode === "undefined";
 
@@ -571,8 +617,7 @@ const mainEngine = async () => {
   let newShapeIdx = getShapeIdx();
 
   while (true) {
-    previewChamber = addPreviewNextShape(newShapeIdx, previewChamber);
-
+    previewChamber = addPreviewNextShape(newShapeIdx, previewChamber, curLevel);
     if (hasRested) {
       newShapeIdx = getShapeIdx();
       hasRested = false;
@@ -598,7 +643,7 @@ const mainEngine = async () => {
 
     // Apply gravity
     const now = Date.now();
-    if (now - lastGravityTime > GRAVITY_SPEED) {
+    if (now - lastGravityTime > curGravitySpeed) {
       lastGravityTime = now;
 
       const shapeCoordsBefore = getShapeCoords(chamber);
@@ -612,7 +657,18 @@ const mainEngine = async () => {
         chamber = restShape(chamber, shapeCoordsAfter);
         chamber = addShape(newShapeIdx, chamber);
         keyQueue.length = 0;
-        chamber = checkFilledRows(chamber);
+        const { numOfFilledRows, chamber: newChamb } = checkFilledRows(chamber);
+        totalNumOfFilledRows += numOfFilledRows;
+        const shouldIncreaseGravityLevel =
+          totalNumOfFilledRows >= LEVEL_LINES_DIFF;
+
+        if (shouldIncreaseGravityLevel) {
+          curGravitySpeed -= GRAVITY_LEVEL_DIFF;
+          totalNumOfFilledRows = totalNumOfFilledRows % LEVEL_LINES_DIFF; // reset
+          curLevel++;
+        }
+
+        chamber = newChamb;
         const lost = checkIfPlayerLost(chamber, newShapeIdx);
         hasRested = true;
 
