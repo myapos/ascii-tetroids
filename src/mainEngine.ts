@@ -261,22 +261,22 @@ const exitAltScreen = () => process.stdout.write("\x1b[?1049l");
 const colorizeCell = (cell: string): string => {
   switch (cell) {
     case LIVE:
-      return chalk.greenBright(cell); // Active piece - high contrast, vibrant
+      return chalk.greenBright(cell);
     case REST:
-      return chalk.white(cell); // Placed blocks - static, locked in place
+      return chalk.white(cell);
     case FLOOR:
-      return chalk.magentaBright(cell); // Foundation - strong boundary
+      return chalk.magentaBright(cell);
     case SIDE_WALL:
-      return chalk.blue(cell); // Walls - visible but not overwhelming
+      return chalk.blue(cell);
     case EMPTY:
-      return chalk.gray(cell); // Background - balanced visibility
+      return chalk.gray(cell);
     case PREVIEW:
-      return chalk.gray(cell); // Preview area - subtle background
+      return chalk.gray(cell);
     case "N":
     case "E":
     case "X":
     case "T":
-      return chalk.yellowBright(cell); // NEXT label - high contrast, warm
+      return chalk.yellowBright(cell);
     default:
       return cell;
   }
