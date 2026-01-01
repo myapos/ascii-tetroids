@@ -14,3 +14,26 @@ export const GRAVITY_LEVEL_DIFF = 10; //ms
 export const MAXIMUM_SPEED = 100; //ms
 export const LEVEL_LINES_DIFF = 10; // lines per level
 export const TOTAL_NUM_OF_COLS = NUM_OF_COLS + PREVIEW_COLS;
+
+// Preview control symbols and labels
+export const PREVIEW_CONTROL_CHARS = ["↑", "←", "↓", "→"];
+export const PREVIEW_LABELS = [
+  "⟳",
+  "L",
+  "D",
+  "R",
+  "s",
+  "p",
+  "a",
+  "c",
+  "e",
+  ":",
+  "u",
+  "Q",
+  "q",
+  "i",
+  "t",
+  '"',
+];
+export const NEXT_WORD = ["N", "E", "X", "T"];
+export const LEVEL_WORD = ["L", "E", "V", "E", "L"];

@@ -4,6 +4,10 @@ import {
   LIVE,
   PREVIEW_COLS,
   MAX_CHAMBER_HEIGHT,
+  PREVIEW_CONTROL_CHARS,
+  PREVIEW_LABELS,
+  NEXT_WORD,
+  LEVEL_WORD,
 } from "src/constants/constants";
 import { getShapes } from "src/shapes/createShapes";
 
@@ -29,12 +33,11 @@ export class PreviewManager {
     this.emptyPreviewArea(previewChamber);
 
     // add a row with the word 'NEXT'
-    const nextWord = ["N", "E", "X", "T"];
     const nextRow = [];
 
     for (let i = 0; i < previewChamber[0].length; i++) {
-      if (i < nextWord.length) {
-        nextRow.push(nextWord[i]);
+      if (i < NEXT_WORD.length) {
+        nextRow.push(NEXT_WORD[i]);
       } else {
         nextRow.push(PREVIEW);
       }
@@ -52,18 +55,17 @@ export class PreviewManager {
     }
 
     // add a row with the word 'LEVEL'
-    const levelWord = ["L", "E", "V", "E", "L"];
     const levelRow = [];
 
     for (let i = 0; i < previewChamber[0].length; i++) {
-      if (i < levelWord.length) {
-        levelRow.push(levelWord[i]);
+      if (i < LEVEL_WORD.length) {
+        levelRow.push(LEVEL_WORD[i]);
       } else {
         levelRow.push(PREVIEW);
       }
     }
 
-    shape.push(levelWord);
+    shape.push(LEVEL_WORD);
     // add cur level
     const curLevelInfo = [curLevel.toString()];
     shape.push(curLevelInfo);
@@ -72,7 +74,7 @@ export class PreviewManager {
     shape.push(emptyRow);
 
     // add Game Boy control schema with arrow symbols - left aligned
-    // ⟳
+    //   ⟳
     //   ↑
     // ← ↓ →
     // L D R
@@ -133,33 +135,14 @@ export class PreviewManager {
     for (let i = 0; i < shape.length; i++) {
       for (let j = 0; j < shape[i].length; j++) {
         const shapeChar = shape[i][j];
-        const controlChars = ["↑", "←", "↓", "→"];
-        const labels = [
-          "⟳",
-          "L",
-          "D",
-          "R",
-          "s",
-          "p",
-          "a",
-          "c",
-          "e",
-          ":",
-          "u",
-          "Q",
-          "q",
-          "i",
-          "t",
-          '"',
-        ];
 
         if (typeof shapeChar !== "undefined") {
           previewChamber[i][j] =
             shapeChar === LIVE ||
-            nextWord.includes(shapeChar) ||
-            levelWord.includes(shapeChar) ||
-            controlChars.includes(shapeChar) ||
-            labels.includes(shapeChar) ||
+            NEXT_WORD.includes(shapeChar) ||
+            LEVEL_WORD.includes(shapeChar) ||
+            PREVIEW_CONTROL_CHARS.includes(shapeChar) ||
+            PREVIEW_LABELS.includes(shapeChar) ||
             Number.isSafeInteger(parseInt(shapeChar))
               ? shapeChar
               : PREVIEW;
