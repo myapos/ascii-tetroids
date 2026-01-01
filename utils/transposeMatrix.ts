@@ -1,5 +1,3 @@
-import { swapSimple } from "./swap";
-
 function transposeMatrix<T>(matrix: T[][]) {
   const transposed: T[][] = [];
   for (let i = 0; i < matrix[0].length; i++) {

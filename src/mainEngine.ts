@@ -1,6 +1,5 @@
-import type { Chamber, ShapeCoords, UserMove } from "src/types";
+import type { Chamber, ShapeCoords, UserMove, Pos } from "src/types";
 import isInBounds from "utils/isInBounds";
-import type { Pos } from "utils/types.ts";
 import rotateMatrix from "utils/rotateMatrix";
 import chalk from "chalk";
 import {
@@ -284,10 +283,7 @@ const colorizeCell = (cell: string): string => {
     case "X":
     case "T":
     case "L":
-    case "E":
     case "V":
-    case "E":
-    case "L":
       return chalk.yellowBright(cell);
     default:
       return cell;

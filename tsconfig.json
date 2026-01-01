@@ -7,10 +7,16 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": ".",
     "baseUrl": ".",
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
     "paths": {
       "utils/*": ["./utils/*"],
       "utils": ["./utils/index.ts"]
     }
-  }
+  },
+  "include": ["index.ts", "src/**/*", "utils/**/*"]
 }
