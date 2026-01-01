@@ -1,17 +1,17 @@
-import { describe, it, expect, spyOn, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, spyOn, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs/promises"; // This matches your code
 
 import readFile from "../readFile";
 
 describe("readFile", () => {
-  let readFileSpy: ReturnType<typeof spyOn>;
+  let readFileSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    readFileSpy = spyOn(fs, "readFile");
+    readFileSpy = vi.spyOn(fs, "readFile");
   });
 
   afterEach(() => {
-    readFileSpy.mockRestore();
+    vi.restoreAllMocks();
   });
 
   it("should pass", () => {

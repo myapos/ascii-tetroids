@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 
 import rotateMatrix from "../rotateMatrix";
 import type { Shape } from "src/types";
