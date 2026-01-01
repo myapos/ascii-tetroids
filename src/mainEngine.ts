@@ -576,11 +576,11 @@ const mainEngine = async () => {
   let curGravitySpeed = GRAVITY_SPEED;
   let curLevel = 1;
   let gameIsActive = true;
-  let gameOverHandled = false;
+  let gameOver = false;
 
   const restartGame = () => {
     gameIsActive = true;
-    gameOverHandled = false;
+    gameOver = false;
     clearPreviousLine(); // Clear the newline after message
     clearPreviousLine(); // Clear the game over message
     chamber = initializeChamber();
@@ -662,8 +662,8 @@ const mainEngine = async () => {
   let newShapeIdx = getShapeIdx();
 
   while (true) {
-    if (!gameIsActive && !gameOverHandled) {
-      gameOverHandled = true;
+    if (!gameIsActive && !gameOver) {
+      gameOver = true;
       logText("\nYOU LOST!! Press 'r' to play again or 'q' to exit\n");
       await new Promise((res) => setTimeout(res, 50));
       continue;
