@@ -5,20 +5,45 @@ A TypeScript implementation of Tetris using ASCII art for display.
 ## Getting Started
 
 ```bash
-bun install
-bun run index.ts
+npm install
+npm run dev
 ```
 
 ## Tech Stack
 
-- TypeScript
-- Bun
+- **Language**: TypeScript 5.9
+- **Package Manager**: npm
+- **Build**: esbuild (production), tsx (development)
+- **Testing**: Vitest
+- **Linting**: ESLint v9
 
-## Testing
+## Scripts
 
 ```bash
-bun test
+npm run dev          # Run game in development mode (tsx)
+npm run build        # Build minified production bundle
+npm test             # Run test suite
+npm run lint         # Run ESLint
+npm run lint:fix     # Fix linting issues automatically
 ```
+
+## Development Workflow
+
+**Development:** Use `npm run dev` for fast TypeScript execution without bundling.
+
+**Production Build:**
+
+```bash
+npm run build        # Creates dist/index.js (minified, ~8-10KB)
+```
+
+The build produces a single minified JavaScript bundle with source dependencies inlined, suitable for distribution or deployment.
+
+**Testing:** Vitest is configured for quick unit tests during development. Tests run with `npm test` or via the git pre-push hook.
+
+## Code Quality
+
+ESLint runs automatically on `git push` via a pre-push hook configured in `.githooks/pre-push`. This prevents commits with lint errors.
 
 ## Terminal Rendering Approach
 
@@ -82,22 +107,21 @@ This approach provides:
 - ✅ Clean visual experience
 - ✅ Proper cleanup on exit
 
-### TODOS
+### Completed Tasks
 
-- clean up
-- refactor/organization
-  - not used utils removal --> OK
-  - not used types removal --> OK
-  - linter --> OK
-  - use class for code orgnization,
-- terminal issues
-  - frame leaks and overflows --> OK
-  - flickering --> OK
-- add floor and side edges --> OK
-- chalk --> OK
-- Features
-  - records SQLite?
-  - better game control --> OK
+- ✅ Removed unused utilities
+- ✅ Removed unused types
+- ✅ ESLint with TypeScript support and pre-push hook
+- ✅ Fixed frame leaks and flickering
+- ✅ Added floor and side edges
+- ✅ Integrated chalk for colored output
+- ✅ Migrated from Bun to npm (esbuild, vitest, tsx)
+
+### Future Enhancements
+
+- Score tracking with persistent storage
+- Improved game controls
+- Additional game modes
   - splash screens
   - back and forth, retry handling?
   - database, scores, extra output on preview
