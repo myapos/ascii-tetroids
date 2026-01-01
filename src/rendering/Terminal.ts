@@ -74,7 +74,7 @@ export class Terminal {
     }
 
     // All preview text and labels (letters except O, colon, double quote) in yellowBright
-    if (/[A-NP-Za-np-z:"']/.test(cell)) {
+    if (/[A-NP-Za-np-z:"' ⟳]/.test(cell)) {
       return chalk.yellowBright(cell);
     }
 
