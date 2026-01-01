@@ -45,6 +45,20 @@ The build produces a single minified JavaScript bundle with source dependencies 
 
 ESLint runs automatically on `git push` via a pre-push hook configured in `.githooks/pre-push`. This prevents commits with lint errors.
 
+## How to Play
+
+Use the keyboard controls to move and rotate pieces:
+
+| Key               | Action                         |
+| ----------------- | ------------------------------ |
+| **← Left Arrow**  | Move piece left                |
+| **→ Right Arrow** | Move piece right               |
+| **↑ Up Arrow**    | Rotate piece                   |
+| **↓ Down Arrow**  | Speed up gravity (drop faster) |
+| **P or Space**    | Pause/Resume game              |
+
+Complete rows to clear them and increase your score. The game ends when pieces stack to the top of the board.
+
 ## Terminal Rendering Approach
 
 This game uses the **alternate screen buffer** to prevent terminal scrolling and frame leakage issues. Here's how it works:
