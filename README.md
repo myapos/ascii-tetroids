@@ -105,3 +105,4 @@ This approach provides:
     - if not then move all columns with no support down until they find
   - colors in ascii chars
   - add auto mode
+  - add music

@@ -1,6 +1,5 @@
-import type { Chamber, ShapeCoords, UserMove } from "src/types";
+import type { Chamber, ShapeCoords, UserMove, Pos } from "src/types";
 import isInBounds from "utils/isInBounds";
-import type { Pos } from "utils/types.ts";
 import rotateMatrix from "utils/rotateMatrix";
 import chalk from "chalk";
 import {

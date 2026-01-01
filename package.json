@@ -6,6 +6,7 @@
     "dev": "tsx index.ts",
     "debug": "node --inspect --import tsx index.ts",
     "start": "tsx index.ts",
+    "type-check": "tsc --noEmit",
     "test": "bun test"
   },
   "devDependencies": {
