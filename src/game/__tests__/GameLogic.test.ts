@@ -154,7 +154,7 @@ describe("GameLogic", () => {
 
     it("moveShapeWithGas routes to correct movement", () => {
       const chamber = gameLogic.initializeChamber();
-
+      const testMe = "123";
       const leftResult = gameLogic.moveShapeWithGas(chamber, "<");
       const rightResult = gameLogic.moveShapeWithGas(chamber, ">");
       const centerResult = gameLogic.moveShapeWithGas(chamber, "invalid");
