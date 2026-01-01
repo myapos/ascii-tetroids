@@ -68,6 +68,16 @@ export class Terminal {
       return chalk.yellowBright(cell);
     }
 
+    // Arrow symbols in cyan
+    if (/[↑←↓→]/.test(cell)) {
+      return chalk.cyan(cell);
+    }
+
+    // All preview text and labels (letters except O, colon, double quote) in yellowBright
+    if (/[A-NP-Za-np-z:"']/.test(cell)) {
+      return chalk.yellowBright(cell);
+    }
+
     switch (cell) {
       case LIVE:
         return chalk.greenBright(cell);
@@ -81,13 +91,6 @@ export class Terminal {
         return chalk.gray(cell);
       case PREVIEW:
         return chalk.gray(cell);
-      case "N":
-      case "E":
-      case "X":
-      case "T":
-      case "L":
-      case "V":
-        return chalk.yellowBright(cell);
       default:
         return cell;
     }

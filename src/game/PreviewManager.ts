@@ -42,8 +42,14 @@ export class PreviewManager {
 
     shape.unshift(nextRow);
 
-    // add an empty row
-    shape.push(emptyRow);
+    // add empty rows to pad shape to consistent height (4 rows is max shape height)
+    const maxShapeHeight = 4;
+    const currentShapeHeight = shape.length - 1; // -1 because we already added nextRow
+    const rowsNeeded = maxShapeHeight - currentShapeHeight;
+
+    for (let i = 0; i < rowsNeeded; i++) {
+      shape.push(emptyRow);
+    }
 
     // add a row with the word 'LEVEL'
     const levelWord = ["L", "E", "V", "E", "L"];
@@ -62,16 +68,98 @@ export class PreviewManager {
     const curLevelInfo = [curLevel.toString()];
     shape.push(curLevelInfo);
 
+    // add empty row for spacing
+    shape.push(emptyRow);
+
+    // add Game Boy control schema with arrow symbols - left aligned
+    // ⟳
+    //   ↑
+    // ← ↓ →
+    // L D R
+    const rotateLabelRow = Array.from({ length: previewChamber[0].length }).map(
+      () => PREVIEW
+    );
+    rotateLabelRow[2] = "⟳";
+    shape.push(rotateLabelRow);
+
+    const rotateRow = Array.from({ length: previewChamber[0].length }).map(
+      () => PREVIEW
+    );
+    rotateRow[2] = "↑";
+    shape.push(rotateRow);
+
+    const controlRow = Array.from({ length: previewChamber[0].length }).map(
+      () => PREVIEW
+    );
+    controlRow[0] = "←";
+    controlRow[2] = "↓";
+    controlRow[4] = "→";
+    shape.push(controlRow);
+
+    // Row with labels: L D R
+    const labelRow = Array.from({ length: previewChamber[0].length }).map(
+      () => PREVIEW
+    );
+    labelRow[0] = "L";
+    labelRow[2] = "D";
+    labelRow[4] = "R";
+    shape.push(labelRow);
+
+    // add empty row for spacing
+    shape.push(emptyRow);
+
+    // add pause and quit controls
+    // ":pause (using double quotes to show space)
+    const pauseRow = Array.from({ length: previewChamber[0].length }).map(
+      () => PREVIEW
+    );
+    const pauseText = '" ":pause';
+    for (let i = 0; i < pauseText.length && i < previewChamber[0].length; i++) {
+      pauseRow[i] = pauseText[i];
+    }
+    shape.push(pauseRow);
+
+    // Q:quit
+    const quitRow = Array.from({ length: previewChamber[0].length }).map(
+      () => PREVIEW
+    );
+    const quitText = "Q:quit";
+    for (let i = 0; i < quitText.length && i < previewChamber[0].length; i++) {
+      quitRow[i] = quitText[i];
+    }
+    shape.push(quitRow);
+
     // write the shape with the next word to the chamber
     for (let i = 0; i < shape.length; i++) {
       for (let j = 0; j < shape[i].length; j++) {
         const shapeChar = shape[i][j];
+        const controlChars = ["↑", "←", "↓", "→"];
+        const labels = [
+          "⟳",
+          "L",
+          "D",
+          "R",
+          "s",
+          "p",
+          "a",
+          "c",
+          "e",
+          ":",
+          "u",
+          "Q",
+          "q",
+          "i",
+          "t",
+          '"',
+        ];
 
         if (typeof shapeChar !== "undefined") {
           previewChamber[i][j] =
             shapeChar === LIVE ||
             nextWord.includes(shapeChar) ||
             levelWord.includes(shapeChar) ||
+            controlChars.includes(shapeChar) ||
+            labels.includes(shapeChar) ||
             Number.isSafeInteger(parseInt(shapeChar))
               ? shapeChar
               : PREVIEW;
