@@ -142,7 +142,7 @@ This approach provides:
 - [ ] splash screens
 - [x] back and forth, retry handling?
 - [ ] database, scores, extra output on preview
-- [ ] levels --> OK
+- [x] levels
 - [ ] check if all columns cells has support
   - [ ] if not then move all columns with no support down until they find
 - [x] colors in ascii chars
