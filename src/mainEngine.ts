@@ -1,3 +1,4 @@
+// it will be deprecated
 import type { Chamber, ShapeCoords, UserMove, Pos } from "src/types";
 import isInBounds from "utils/isInBounds";
 import rotateMatrix from "utils/rotateMatrix";
