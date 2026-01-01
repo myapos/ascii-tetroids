@@ -283,10 +283,7 @@ const colorizeCell = (cell: string): string => {
     case "X":
     case "T":
     case "L":
-    case "E":
     case "V":
-    case "E":
-    case "L":
       return chalk.yellowBright(cell);
     default:
       return cell;
