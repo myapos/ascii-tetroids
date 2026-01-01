@@ -56,6 +56,8 @@ Use the keyboard controls to move and rotate pieces:
 | **↑ Up Arrow**    | Rotate piece                   |
 | **↓ Down Arrow**  | Speed up gravity (drop faster) |
 | **P or Space**    | Pause/Resume game              |
+| **R**             | Play again (after game over)   |
+| **Q**             | Quit game gracefully           |
 
 Complete rows to clear them and increase your score. The game ends when pieces stack to the top of the board.
 
@@ -123,26 +125,28 @@ This approach provides:
 
 ### Completed Tasks
 
-- ✅ Removed unused utilities
-- ✅ Removed unused types
-- ✅ ESLint with TypeScript support and pre-push hook
-- ✅ Fixed frame leaks and flickering
-- ✅ Added floor and side edges
-- ✅ Integrated chalk for colored output
-- ✅ Migrated from Bun to npm (esbuild, vitest, tsx)
+- [x] Removed unused utilities
+- [x] Removed unused types
+- [x] ESLint with TypeScript support and pre-push hook
+- [x] Fixed frame leaks and flickering
+- [x] Added floor and side edges
+- [x] Integrated chalk for colored output
+- [x] Migrated from Bun to npm (esbuild, vitest, tsx)
 
 ### Future Enhancements
 
-- Score tracking with persistent storage
-- Improved game controls
-- Additional game modes
-  - splash screens
-  - back and forth, retry handling?
-  - database, scores, extra output on preview
-  - levels --> OK
-  - check if all columns cells has support
-    - if not then move all columns with no support down until they find
-  - colors in ascii chars
-  - add auto mode
-  - add music
-  - instructions for pausing in preview
+- [ ] Score tracking with persistent storage
+- [ ] Refactoor and organize code structure
+- [x] Improved game controls
+- [ ] Additional game modes
+- [ ] splash screens
+- [x] back and forth, retry handling?
+- [ ] database, scores, extra output on preview
+- [ ] levels --> OK
+- [ ] check if all columns cells has support
+  - [ ] if not then move all columns with no support down until they find
+- [x] colors in ascii chars
+- [ ] add auto mode
+- [ ] add music
+- [ ] instructions for pausing in preview
+- [ ] deb packaging

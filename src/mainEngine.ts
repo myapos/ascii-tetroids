@@ -46,6 +46,12 @@ const deleteShape = (shapeCoords: ShapeCoords, chamber: Chamber) => {
   return cloned;
 };
 
+const colorizeText = (text: string) => chalk.yellowBright(text);
+
+const logText = (text: string) => {
+  process.stdout.write(colorizeText(text));
+};
+
 const getBottomToUpFrontier = (chamber: Chamber): ShapeCoords => {
   const bottomToUpFrontier: ShapeCoords = [];
   for (let j = 0; j < chamber[0].length; j++) {
@@ -182,7 +188,7 @@ const collidesToTheEdges = (
 };
 
 const moveShapeLeft = (chamber: Chamber, shapeCoords: ShapeCoords): Chamber => {
-  if (!canMoveLeft(chamber, shapeCoords)) {
+  if (!canMoveLeft(chamber)) {
     return chamber;
   }
   const cloned = clone(chamber);
@@ -205,7 +211,7 @@ const moveShapeRight = (
   chamber: Chamber,
   shapeCoords: ShapeCoords
 ): Chamber => {
-  if (!canMoveRight(chamber, shapeCoords)) {
+  if (!canMoveRight(chamber)) {
     return chamber;
   }
   const cloned = clone(chamber);
@@ -260,6 +266,13 @@ const hideCursor = () => process.stdout.write("\x1b[?25l");
 const showCursor = () => process.stdout.write("\x1b[?25h");
 const enterAltScreen = () => process.stdout.write("\x1b[?1049h");
 const exitAltScreen = () => process.stdout.write("\x1b[?1049l");
+const moveCursorUpOneLine = () => process.stdout.write("\x1b[1A");
+const clearLine = () => process.stdout.write("\x1b[2K");
+const clearPreviousLine = () => {
+  moveCursorUpOneLine();
+  clearLine();
+};
+
 const colorizeCell = (cell: string): string => {
   if (Number.isSafeInteger(parseInt(cell))) {
     return chalk.yellowBright(cell);
@@ -562,6 +575,25 @@ const mainEngine = async () => {
   let totalNumOfFilledRows = 0;
   let curGravitySpeed = GRAVITY_SPEED;
   let curLevel = 1;
+  let gameIsActive = true;
+  let gameOverHandled = false;
+
+  const restartGame = () => {
+    gameIsActive = true;
+    gameOverHandled = false;
+    clearPreviousLine(); // Clear the newline after message
+    clearPreviousLine(); // Clear the game over message
+    chamber = initializeChamber();
+    previewChamber = initializePreviewChamber();
+    isPaused = false;
+    totalNumOfFilledRows = 0;
+    curGravitySpeed = GRAVITY_SPEED;
+    curLevel = 1;
+    keyQueue.length = 0;
+    hasRested = false;
+    newShapeIdx = getShapeIdx();
+    lastGravityTime = Date.now();
+  };
 
   const isInDebugMode = typeof process.stdin.setRawMode === "undefined";
 
@@ -576,12 +608,29 @@ const mainEngine = async () => {
         process.exit();
       }
 
+      // Handle graceful exit with 'q' key
+      if (key === "q" || key === "Q") {
+        exitAltScreen();
+        showCursor();
+        process.exit(0);
+      }
+
       // Handle pause/resume with 'p' or space key
       if (key === "p" || key === "P" || key === " ") {
         isPaused = !isPaused;
         if (isPaused) {
-          console.clear();
-          console.log("GAME PAUSED - Press 'p' or space to resume");
+          logText("\nGAME PAUSED - Press 'p' or space to resume\n");
+        } else {
+          clearPreviousLine(); // Clear the pause message line
+          clearPreviousLine(); // Clear the extra newline
+        }
+        return;
+      }
+
+      // Handle play again with 'r' key
+      if (key === "r" || key === "R") {
+        if (!gameIsActive) {
+          restartGame();
         }
         return;
       }
@@ -613,6 +662,19 @@ const mainEngine = async () => {
   let newShapeIdx = getShapeIdx();
 
   while (true) {
+    if (!gameIsActive && !gameOverHandled) {
+      gameOverHandled = true;
+      logText("\nYOU LOST!! Press 'r' to play again or 'q' to exit\n");
+      await new Promise((res) => setTimeout(res, 50));
+      continue;
+    }
+
+    if (!gameIsActive) {
+      // Skip all game logic if game is not active
+      await new Promise((res) => setTimeout(res, 50));
+      continue;
+    }
+
     previewChamber = addPreviewNextShape(newShapeIdx, previewChamber, curLevel);
     if (hasRested) {
       newShapeIdx = getShapeIdx();
@@ -672,10 +734,7 @@ const mainEngine = async () => {
         hasRested = true;
 
         if (lost) {
-          exitAltScreen();
-          showCursor();
-          console.log(chalk.yellowBright("YOU LOST!! Try again"));
-          break;
+          gameIsActive = false;
         }
       }
     }
