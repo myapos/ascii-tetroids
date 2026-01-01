@@ -155,21 +155,20 @@ describe("GameLogic", () => {
     it("moveShapeWithGas routes to correct movement", () => {
       const chamber = gameLogic.initializeChamber();
 
-      const leftResult = gameLogic.moveShapeWithGas(
-        JSON.parse(JSON.stringify(chamber)),
-        "<"
-      );
-      const rightResult = gameLogic.moveShapeWithGas(
-        JSON.parse(JSON.stringify(chamber)),
-        ">"
-      );
+      const leftResult = gameLogic.moveShapeWithGas(chamber, "<");
+      const rightResult = gameLogic.moveShapeWithGas(chamber, ">");
+      const centerResult = gameLogic.moveShapeWithGas(chamber, "invalid");
 
-      const centerResult = gameLogic.moveShapeWithGas(
-        JSON.parse(JSON.stringify(chamber)),
-        "invalid"
-      );
+      // Get shape coordinates to verify movement direction
+      const leftCoords = gameLogic.getShapeCoords(leftResult);
+      const rightCoords = gameLogic.getShapeCoords(rightResult);
+      const originalCoords = gameLogic.getShapeCoords(chamber);
 
-      // Should return chamber unchanged for invalid move
+      // Left movement should shift columns left
+      expect(leftCoords[0][1]).toBeLessThan(originalCoords[0][1]);
+      // Right movement should shift columns right
+      expect(rightCoords[0][1]).toBeGreaterThan(originalCoords[0][1]);
+      // Invalid move should return chamber unchanged
       expect(centerResult).toEqual(chamber);
     });
   });
