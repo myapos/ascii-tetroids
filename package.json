@@ -1,12 +1,13 @@
 {
   "name": "ascii-tetris",
-  "module": "index.ts",
+  "module": "index-new.ts",
   "type": "module",
   "scripts": {
-    "dev": "tsx index.ts",
-    "debug": "node --inspect --import tsx index.ts",
-    "start": "tsx index.ts",
-    "build": "esbuild index.ts --bundle --platform=node --format=esm --outdir=dist --external:chalk --minify",
+    "dev": "tsx index-new.ts",
+    "dev:old": "tsx index.ts",
+    "debug": "node --inspect --import tsx index-new.ts",
+    "start": "tsx index-new.ts",
+    "build": "esbuild index-new.ts --bundle --platform=node --format=esm --outdir=dist --external:chalk --minify",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -20,7 +20,7 @@ export default [
     },
     rules: {
       "@typescript-eslint/no-unused-vars": [
-        "warn",
+        "error",
         {
           argsIgnorePattern: "^_",
         },
