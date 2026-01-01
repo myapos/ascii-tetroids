@@ -7,6 +7,7 @@ import { InputHandler } from "src/input/InputHandler";
 import { Terminal } from "src/rendering/Terminal";
 import { PreviewManager } from "src/game/PreviewManager";
 import { MAX_CHAMBER_HEIGHT, NUM_OF_COLS } from "src/constants/constants";
+import { UserMove } from "src/types";
 
 export class ClassicMode implements IGameMode {
   private gameLogic: GameLogic;
@@ -27,7 +28,7 @@ export class ClassicMode implements IGameMode {
     gameState: GameState,
     difficulty: IDifficultyLevel
   ): Promise<void> {
-    const keyQueue: string[] = [];
+    const keyQueue: UserMove[] = [];
     const MAX_QUEUE_SIZE = 2000;
 
     const shapes = this.gameLogic.getShapes();
