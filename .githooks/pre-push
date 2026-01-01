@@ -1,0 +1,8 @@
+#!/bin/sh
+# Pre-push hook: Run lint before pushing
+
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Lint failed. Fix errors before pushing."
+  exit 1
+fi

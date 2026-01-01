@@ -86,12 +86,13 @@ This approach provides:
 
 - clean up
 - refactor/organization
-  - not used utils removal
-  - not used types removal
+  - not used utils removal --> OK
+  - not used types removal --> OK
+  - linter --> OK
+  - use class for code orgnization,
 - terminal issues
   - frame leaks and overflows --> OK
   - flickering --> OK
-- use class for code orgnization,
 - add floor and side edges --> OK
 - chalk --> OK
 - Features
@@ -106,3 +107,4 @@ This approach provides:
   - colors in ascii chars
   - add auto mode
   - add music
+  - instructions for pausing in preview
