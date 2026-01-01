@@ -148,5 +148,5 @@ This approach provides:
 - [x] colors in ascii chars
 - [ ] add auto mode
 - [ ] add music
-- [ ] instructions for pausing in preview
+- [x] instructions for pausing in preview
 - [ ] deb packaging
