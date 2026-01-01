@@ -27,7 +27,7 @@ const getShapeCoords = (chamber: Chamber): ShapeCoords => {
 
   for (let i = 0; i < chamber.length; i++) {
     for (let j = 0; j < chamber[0].length; j++) {
-      let cell = chamber[i][j];
+      const cell = chamber[i][j];
 
       if (cell === LIVE) {
         shapeCoords.push([i, j]);
@@ -47,7 +47,7 @@ const deleteShape = (shapeCoords: ShapeCoords, chamber: Chamber) => {
 };
 
 const getBottomToUpFrontier = (chamber: Chamber): ShapeCoords => {
-  let bottomToUpFrontier: ShapeCoords = [];
+  const bottomToUpFrontier: ShapeCoords = [];
   for (let j = 0; j < chamber[0].length; j++) {
     for (let i = chamber.length - 1; i >= 0; i--) {
       const cell = chamber[i][j];
@@ -62,11 +62,11 @@ const getBottomToUpFrontier = (chamber: Chamber): ShapeCoords => {
 };
 
 // will pre-check all of the coords if they can move
-const canMoveDown = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
+const canMoveDown = (chamber: Chamber): boolean => {
   let canGoDown = true;
 
   // scan the chamber from the floor to the top
-  let bottomToUpFrontier = getBottomToUpFrontier(chamber);
+  const bottomToUpFrontier = getBottomToUpFrontier(chamber);
 
   // check on row down for each coord in the bottomToUpFrontier and decide if the
   // shape can go down
@@ -79,10 +79,10 @@ const canMoveDown = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
   return canGoDown;
 };
 
-const canMoveRight = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
+const canMoveRight = (chamber: Chamber): boolean => {
   let canGoRight = true;
 
-  let rightFrontier: ShapeCoords = [];
+  const rightFrontier: ShapeCoords = [];
 
   for (let i = chamber.length - 1; i >= 0; i--) {
     for (let j = chamber[0].length - 1; j >= 0; j--) {
@@ -107,14 +107,14 @@ const canMoveRight = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
   return canGoRight;
 };
 
-const canMoveLeft = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
+const canMoveLeft = (chamber: Chamber): boolean => {
   // find for each row the minimum frontier cols and check if there is
   // any available space left before it
   // if all of them have empty space then it can move left
   // otherwise no
 
   let canGoLeft = true;
-  let leftFrontier: ShapeCoords = [];
+  const leftFrontier: ShapeCoords = [];
 
   for (let i = 0; i < chamber.length; i++) {
     for (let j = 0; j < chamber[0].length; j++) {
@@ -135,13 +135,13 @@ const canMoveLeft = (chamber: Chamber, shapeCoords: ShapeCoords): boolean => {
 
 const moveShapeDown = (chamber: Chamber): Chamber => {
   const shapeCoords = getShapeCoords(chamber);
-  if (!canMoveDown(chamber, shapeCoords)) {
+  if (!canMoveDown(chamber)) {
     return chamber;
   }
   chamber = deleteShape(shapeCoords, chamber);
 
   // move down each cell coord
-  for (let coord of shapeCoords) {
+  for (const coord of shapeCoords) {
     const [i, j] = coord;
 
     const newRowHeight = i + 1;
@@ -494,11 +494,11 @@ const initializeChamber = (): Chamber => {
 };
 
 const initializePreviewChamber = (): Chamber => {
-  let previewChamber: Chamber = Array.from({ length: MAX_CHAMBER_HEIGHT }).map(
-    () => {
-      return Array.from({ length: PREVIEW_COLS }).map(() => PREVIEW);
-    }
-  );
+  const previewChamber: Chamber = Array.from({
+    length: MAX_CHAMBER_HEIGHT,
+  }).map(() => {
+    return Array.from({ length: PREVIEW_COLS }).map(() => PREVIEW);
+  });
 
   return previewChamber;
 };
@@ -543,15 +543,15 @@ const getTowerHeight = (chamber: Chamber) => {
 };
 
 const checkIfPlayerLost = (chamber: Chamber, shapeIdx: number): boolean => {
-  let towerHeight = getTowerHeight(chamber);
-  let totalHeight = towerHeight + shapes.get(shapeIdx)!.length;
-  let hasReachedToTop = totalHeight >= chamber.length - 1; // removes the floor
+  const towerHeight = getTowerHeight(chamber);
+  const totalHeight = towerHeight + shapes.get(shapeIdx)!.length;
+  const hasReachedToTop = totalHeight >= chamber.length - 1; // removes the floor
 
   return hasReachedToTop;
 };
 
 const mainEngine = async () => {
-  let gameChamber: Chamber = initializeChamber();
+  const gameChamber: Chamber = initializeChamber();
   let previewChamber: Chamber = initializePreviewChamber();
   let chamber: Chamber = [...gameChamber];
 
@@ -586,7 +586,6 @@ const mainEngine = async () => {
         return;
       }
 
-      const now = Date.now();
       let keyType = "";
 
       if (key === "\u001b[D") {

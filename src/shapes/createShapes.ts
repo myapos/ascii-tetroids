@@ -27,15 +27,6 @@ const padShape = (shape: Shape, targetWidth: number): Shape => {
   });
 };
 
-type shapeNames =
-  | "T"
-  | "leftL"
-  | "rightL"
-  | "verticalLine"
-  | "square"
-  | "leftSigma"
-  | "rightSigma";
-
 const shapes = new Map<number, Shape>();
 
 export const getShapes = (): Map<number, Shape> => {

@@ -6,15 +6,20 @@
     "dev": "tsx index.ts",
     "debug": "node --inspect --import tsx index.ts",
     "start": "tsx index.ts",
-    "build": "esbuild index.ts --bundle --platform=node --format=esm --outdir=dist --external:chalk",
+    "build": "esbuild index.ts --bundle --platform=node --format=esm --outdir=dist --external:chalk --minify",
     "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "vitest"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/node": "^25.0.3",
     "esbuild": "^0.27.2",
+    "eslint": "^9.39.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.51.0",
     "vitest": "^4.0.16"
   },
   "peerDependencies": {

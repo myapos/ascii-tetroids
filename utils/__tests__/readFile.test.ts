@@ -1,9 +1,8 @@
-import { describe, it, expect, spyOn, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs/promises"; // This matches your code
 
-import readFile from "../readFile";
-
 describe("readFile", () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let readFileSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
