@@ -5,7 +5,8 @@ export type InputEventType =
   | "rotate"
   | "pause"
   | "play-again"
-  | "quit";
+  | "quit"
+  | "start-game";
 
 export interface InputEvent {
   type: InputEventType;
@@ -57,8 +58,12 @@ export class InputHandler {
         this.emit({ type: "quit", timestamp: Date.now() });
       }
 
-      if (key === "p" || key === "P" || key === " ") {
+      if (key === " ") {
         this.emit({ type: "pause", timestamp: Date.now() });
+      }
+
+      if (key === "p" || key === "P") {
+        this.emit({ type: "start-game", timestamp: Date.now() });
       }
 
       if (key === "r" || key === "R") {
