@@ -1,18 +1,23 @@
-import type { IGameMode } from "./IGameMode";
-import type { GameState } from "../domain/GameState";
-import type { IDifficultyLevel } from "../difficulty/DifficultyLevel";
-import { GameLogic } from "../game/GameLogic";
-import { Renderer } from "../rendering/Renderer";
-import { InputHandler } from "../input/InputHandler";
-import { Terminal } from "../rendering/Terminal";
+import type { IGameMode } from "src/modes/IGameMode";
+import type { GameState } from "src/domain/GameState";
+import type { IDifficultyLevel } from "src/difficulty/DifficultyLevel";
+import { GameLogic } from "src/game/GameLogic";
+import { Renderer } from "src/rendering/Renderer";
+import { InputHandler } from "src/input/InputHandler";
+import { Terminal } from "src/rendering/Terminal";
 import {
   DEMO_MOVEMENTS,
   DEMO_MOVE_INTERVAL,
   MAX_CHAMBER_HEIGHT,
   NUM_OF_COLS,
-} from "../constants/constants";
-import { PreviewManager } from "../game/PreviewManager";
+} from "src/constants/constants";
+import { PreviewManager } from "src/game/PreviewManager";
 import chalk from "chalk";
+import {
+  splashScreenConfig,
+  splashScreenLines,
+} from "src/modes/splashScreenConfig";
+import { demoFooterConfig, demoFooterLines } from "src/modes/demoFooterConfig";
 
 export class DemoMode implements IGameMode {
   private gameLogic: GameLogic;
@@ -79,33 +84,8 @@ export class DemoMode implements IGameMode {
     Terminal.moveCursorHome();
     console.clear();
 
-    const config = {
-      contentWidth: 39, // Width between borders
-      padding: "    ", // 4 spaces for left padding
-    };
-
-    const lines = [
-      { type: "top" },
-      {
-        type: "content",
-        leading: 4,
-        text: chalk.yellow("TETRIS") + " " + chalk.cyan("- ASCII Edition"),
-      },
-      { type: "divider" },
-      { type: "empty" },
-      { type: "content", leading: 4, text: chalk.green("Press P to Play") },
-      { type: "empty" },
-      {
-        type: "content",
-        leading: 4,
-        text: chalk.gray("Auto-playing demo below..."),
-      },
-      { type: "empty" },
-      { type: "bottom" },
-    ];
-
-    const splashArt = lines
-      .map((line) => this.formatLine(line, config))
+    const splashArt = splashScreenLines
+      .map((line) => this.formatLine(line, splashScreenConfig))
       .join("\n");
     console.log(splashArt);
   }
@@ -160,27 +140,8 @@ export class DemoMode implements IGameMode {
   }
 
   private displayDemoFooter(): void {
-    const config = {
-      contentWidth: 39,
-      padding: "",
-    };
-
-    const lines = [
-      { type: "top" },
-      {
-        type: "content",
-        leading: 0,
-        text:
-          chalk.gray("DEMO MODE") +
-          "  " +
-          chalk.green("Press P to Play") +
-          chalk.gray("  (Q to Quit)"),
-      },
-      { type: "bottom" },
-    ];
-
-    const footerSplashArt = lines
-      .map((line) => this.formatLine(line, config))
+    const footerSplashArt = demoFooterLines
+      .map((line) => this.formatLine(line, demoFooterConfig))
       .join("\n");
     console.log(footerSplashArt);
   }
