@@ -13,15 +13,22 @@ export class ClassicMode implements IGameMode {
   private gameLogic: GameLogic;
   private renderer: Renderer;
   private inputHandler: InputHandler;
+  private demoSequence: UserMove[] | null = null;
+  private demoMoveIndex = 0;
+  private onRenderCallback: (() => void) | null = null;
 
   constructor(
     gameLogic: GameLogic,
     renderer: Renderer,
-    inputHandler: InputHandler
+    inputHandler: InputHandler,
+    demoSequence?: UserMove[],
+    onRenderCallback?: () => void
   ) {
     this.gameLogic = gameLogic;
     this.renderer = renderer;
     this.inputHandler = inputHandler;
+    this.demoSequence = demoSequence || null;
+    this.onRenderCallback = onRenderCallback || null;
   }
 
   async play(
@@ -38,63 +45,65 @@ export class ClassicMode implements IGameMode {
     let newShapeIdx = Math.floor(Math.random() * shapes.size);
     let gameOverHandled = false;
 
-    // Setup input handlers
-    this.inputHandler.on("move-left", () => {
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push("<");
-      }
-    });
+    // Setup input handlers - only for non-demo mode
+    if (!this.demoSequence) {
+      this.inputHandler.on("move-left", () => {
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push("<");
+        }
+      });
 
-    this.inputHandler.on("move-right", () => {
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push(">");
-      }
-    });
+      this.inputHandler.on("move-right", () => {
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push(">");
+        }
+      });
 
-    this.inputHandler.on("move-down", () => {
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push("down");
-      }
-    });
+      this.inputHandler.on("move-down", () => {
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push("down");
+        }
+      });
 
-    this.inputHandler.on("rotate", () => {
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push("rotate");
-      }
-    });
+      this.inputHandler.on("rotate", () => {
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push("rotate");
+        }
+      });
 
-    this.inputHandler.on("pause", () => {
-      gameState.isPaused = !gameState.isPaused;
-      if (gameState.isPaused) {
-        Terminal.write(
-          Terminal.colorizeText(
-            "\nGAME PAUSED - Press 'p' or space to resume\n"
-          )
-        );
-      } else {
-        Terminal.clearPreviousLine();
-        Terminal.clearPreviousLine();
-      }
-    });
+      this.inputHandler.on("pause", () => {
+        gameState.isPaused = !gameState.isPaused;
+        if (gameState.isPaused) {
+          Terminal.write(
+            Terminal.colorizeText(
+              "\nGAME PAUSED - Press 'p' or space to resume\n"
+            )
+          );
+        } else {
+          Terminal.clearPreviousLine();
+          Terminal.clearPreviousLine();
+        }
+      });
 
-    this.inputHandler.on("quit", () => {
-      gameState.isActive = false;
-      this.renderer.exitGame();
-      process.exit(0);
-    });
+      this.inputHandler.on("quit", () => {
+        gameState.isActive = false;
+        this.renderer.exitGame();
+        process.exit(0);
+      });
 
-    this.inputHandler.on("play-again", () => {
-      if (!gameState.isActive) {
-        Terminal.clearPreviousLine(); // Clear the newline after message
-        Terminal.clearPreviousLine(); // Clear the game over message
-        gameState.reset(
-          this.gameLogic.initializeChamber(),
-          PreviewManager.initializeChamber(),
-          difficulty.getInitialGravitySpeed()
-        );
-        gameOverHandled = false;
-      }
-    });
+      this.inputHandler.on("play-again", () => {
+        if (!gameState.isActive) {
+          Terminal.clearPreviousLine(); // Clear the newline after message
+          Terminal.clearPreviousLine(); // Clear the game over message
+          gameState.reset(
+            this.gameLogic.initializeChamber(),
+            PreviewManager.initializeChamber(),
+            difficulty.getInitialGravitySpeed()
+          );
+          gameOverHandled = false;
+        }
+      });
+    }
 
     // Start input handler AFTER all listeners are registered
     this.inputHandler.start();
@@ -112,6 +121,25 @@ export class ClassicMode implements IGameMode {
     while (true) {
       if (!gameState.isActive && !gameOverHandled) {
         gameOverHandled = true;
+
+        // In demo mode, auto-restart
+        if (this.demoSequence) {
+          gameState.reset(
+            this.gameLogic.initializeChamber(),
+            PreviewManager.initializeChamber(),
+            difficulty.getInitialGravitySpeed()
+          );
+          gameOverHandled = false;
+          this.demoMoveIndex = 0;
+          newShapeIdx = Math.floor(Math.random() * shapes.size);
+          gameState.previewChamber = PreviewManager.addPreviewNextShape(
+            newShapeIdx,
+            gameState.previewChamber,
+            gameState.level
+          );
+          continue;
+        }
+
         Terminal.write(
           Terminal.colorizeText(
             "\nYOU LOST!! Press 'r' to play again or 'q' to exit\n"
@@ -127,6 +155,18 @@ export class ClassicMode implements IGameMode {
       if (gameState.isPaused) {
         await Terminal.sleep(50);
         continue;
+      }
+
+      // In demo mode, inject moves from sequence
+      if (this.demoSequence) {
+        const move =
+          this.demoSequence[this.demoMoveIndex % this.demoSequence.length];
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push(move);
+        }
+        this.demoMoveIndex++;
+        // Slow down demo moves to be visible
+        await Terminal.sleep(650);
       }
 
       // Process all queued input
@@ -227,6 +267,11 @@ export class ClassicMode implements IGameMode {
         gameState.chamber,
         gameState.previewChamber
       );
+
+      // Call render callback if in demo mode
+      if (this.onRenderCallback) {
+        this.onRenderCallback();
+      }
     }
   }
 }

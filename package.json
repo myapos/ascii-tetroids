@@ -7,7 +7,7 @@
     "dev:old": "tsx index.ts",
     "debug": "node --inspect --import tsx index-new.ts",
     "start": "tsx index-new.ts",
-    "build": "esbuild index-new.ts --bundle --platform=node --format=esm --outdir=dist --external:chalk --minify",
+    "build": "esbuild index-new.ts --bundle --platform=node --format=esm --outdir=dist --external:chalk --minify && cp inputSample.txt dist/",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
