@@ -117,7 +117,7 @@ export const splashScreenLines = [
   {
     type: "content",
     leading: 0,
-    text: chalk.gray("Author: ") + chalk.grey("Myron Apostolakis (2626)"),
+    text: chalk.gray("Author: ") + chalk.grey("Myron Apostolakis (2026)"),
   },
   { type: "empty" },
   {

@@ -74,15 +74,26 @@ export class ClassicMode implements IGameMode {
 
     this.inputHandler.on("play-again", () => {
       if (!gameState.isActive) {
-        Terminal.clearPreviousLine();
-        Terminal.clearPreviousLine();
-        Terminal.clearPreviousLine(); // Clear the game over message
         gameState.reset(
           this.gameLogic.initializeChamber(),
           PreviewManager.initializeChamber(),
           difficulty.getInitialGravitySpeed()
         );
+        // Clear any queued moves to prevent carryover
+        keyQueue.length = 0;
+        // Reset timing variables
+        lastGravityTime = Date.now();
+        hasRested = false;
+        newShapeIdx = Math.floor(Math.random() * shapes.size);
         gameOverHandled = false;
+        // Initialize preview with the first shape for new game
+        gameState.previewChamber = PreviewManager.addPreviewNextShape(
+          newShapeIdx,
+          gameState.previewChamber,
+          gameState.level
+        );
+        // Finally, set active to exit the wait loop
+        gameState.isActive = true;
       }
     });
 
@@ -214,10 +225,13 @@ export class ClassicMode implements IGameMode {
             "\nYOU LOST!! Press 'r' to play again or 'q' to exit\n"
           )
         );
-        // Wait for user input (play-again or quit)
-        while (gameState.isActive === false) {
+        // Wait for user input (play-again or quit) - skip all game logic
+        while (!gameState.isActive) {
           await Terminal.sleep(100);
         }
+        // Clear the message when user chooses to play again
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
         continue;
       }
 
