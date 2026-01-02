@@ -29,7 +29,7 @@ export class InputHandler {
     this.listeners.get(eventType)?.delete(callback);
   }
 
-  private emit(event: InputEvent) {
+  emit(event: InputEvent) {
     const callbacks = this.listeners.get(event.type);
     if (callbacks) {
       callbacks.forEach((callback) => callback(event));
