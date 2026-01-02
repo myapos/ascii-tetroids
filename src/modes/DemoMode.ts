@@ -53,11 +53,8 @@ export class DemoMode implements IGameMode {
     // Wait for user to press P or timeout
     await this.waitForPlayOrTimeout();
 
-    if (this.wasUserInitiated) {
-      return;
-    }
-
     // Run demo with ClassicMode using predefined sequence
+    // (whether user pressed P or timeout occurred)
     await this.classicMode.play(gameState, difficulty);
   }
 
@@ -65,20 +62,11 @@ export class DemoMode implements IGameMode {
     return new Promise<void>((resolve) => {
       this.inputHandler.start();
 
-      const startGameListener = () => {
-        this.wasUserInitiated = true;
-        this.inputHandler.stop();
-        resolve();
-      };
-
-      this.inputHandler.on("start-game", startGameListener);
-
-      // Timeout after 10 seconds
+      // Timeout after 10 seconds to auto-start demo
       setTimeout(() => {
-        this.inputHandler.off("start-game", startGameListener);
         this.inputHandler.stop();
         resolve();
-      }, 1000);
+      }, 10000);
     });
   }
 

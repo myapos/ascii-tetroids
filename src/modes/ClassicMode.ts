@@ -45,8 +45,8 @@ export class ClassicMode implements IGameMode {
     let newShapeIdx = Math.floor(Math.random() * shapes.size);
     let gameOverHandled = false;
 
-    // Setup input handlers - only for non-demo mode
-    if (!this.demoSequence) {
+    // Setup shape movement input handlers - disabled in demo mode
+    if (!this.demoSequence?.length) {
       this.inputHandler.on("move-left", () => {
         if (keyQueue.length < MAX_QUEUE_SIZE) {
           keyQueue.push("<");
@@ -70,40 +70,109 @@ export class ClassicMode implements IGameMode {
           keyQueue.push("rotate");
         }
       });
+    }
 
-      this.inputHandler.on("pause", () => {
-        gameState.isPaused = !gameState.isPaused;
-        if (gameState.isPaused) {
-          Terminal.write(
-            Terminal.colorizeText(
-              "\nGAME PAUSED - Press 'p' or space to resume\n"
-            )
-          );
-        } else {
-          Terminal.clearPreviousLine();
-          Terminal.clearPreviousLine();
+    this.inputHandler.on("play-again", () => {
+      if (!gameState.isActive) {
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine(); // Clear the game over message
+        gameState.reset(
+          this.gameLogic.initializeChamber(),
+          PreviewManager.initializeChamber(),
+          difficulty.getInitialGravitySpeed()
+        );
+        gameOverHandled = false;
+      }
+    });
+
+    // Setup start-game listener for demo mode
+    if (this.demoSequence) {
+      const moveLeftHandler = () => {
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push("<");
         }
-      });
+      };
 
-      this.inputHandler.on("quit", () => {
-        gameState.isActive = false;
-        this.renderer.exitGame();
-        process.exit(0);
-      });
-
-      this.inputHandler.on("play-again", () => {
-        if (!gameState.isActive) {
-          Terminal.clearPreviousLine(); // Clear the newline after message
-          Terminal.clearPreviousLine(); // Clear the game over message
-          gameState.reset(
-            this.gameLogic.initializeChamber(),
-            PreviewManager.initializeChamber(),
-            difficulty.getInitialGravitySpeed()
-          );
-          gameOverHandled = false;
+      const moveRightHandler = () => {
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push(">");
         }
+      };
+
+      const moveDownHandler = () => {
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push("down");
+        }
+      };
+
+      const rotateHandler = () => {
+        if (keyQueue.length < MAX_QUEUE_SIZE) {
+          keyQueue.push("rotate");
+        }
+      };
+
+      this.inputHandler.on("start-game", () => {
+        // Switch from demo mode to player mode
+        this.demoSequence = null;
+        this.demoMoveIndex = 0;
+
+        // Reset game state for fresh start
+        gameState.reset(
+          this.gameLogic.initializeChamber(),
+          PreviewManager.initializeChamber(),
+          difficulty.getInitialGravitySpeed()
+        );
+        gameOverHandled = false;
+
+        // Reset timing variables
+        lastGravityTime = Date.now();
+        hasRested = false;
+
+        // Select new shape
+        newShapeIdx = Math.floor(Math.random() * shapes.size);
+        gameState.previewChamber = PreviewManager.addPreviewNextShape(
+          newShapeIdx,
+          gameState.previewChamber,
+          gameState.level
+        );
+
+        // Clear any queued moves from demo
+        keyQueue.length = 0;
+
+        // Enable movement input handlers
+        this.inputHandler.on("move-left", moveLeftHandler);
+        this.inputHandler.on("move-right", moveRightHandler);
+        this.inputHandler.on("move-down", moveDownHandler);
+        this.inputHandler.on("rotate", rotateHandler);
+
+        // Clear footer (3 lines) and print message
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
       });
     }
+
+    // Setup control handlers - always enabled (pause and quit work in all modes)
+    this.inputHandler.on("pause", () => {
+      gameState.isPaused = !gameState.isPaused;
+      if (gameState.isPaused) {
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.write(
+          Terminal.colorizeText("\nGAME PAUSED - Press 'space' to resume\n")
+        );
+      } else {
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+      }
+    });
+
+    this.inputHandler.on("quit", () => {
+      gameState.isActive = false;
+      this.renderer.exitGame();
+      process.exit(0);
+    });
 
     // Start input handler AFTER all listeners are registered
     this.inputHandler.start();
@@ -268,8 +337,8 @@ export class ClassicMode implements IGameMode {
         gameState.previewChamber
       );
 
-      // Call render callback if in demo mode
-      if (this.onRenderCallback) {
+      // Call render callback only if still in demo mode
+      if (this.onRenderCallback && this.demoSequence) {
         this.onRenderCallback();
       }
     }

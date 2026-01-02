@@ -7,19 +7,123 @@ export const splashScreenConfig = {
 
 export const splashScreenLines = [
   { type: "top" },
+  { type: "empty" },
   {
     type: "content",
-    leading: 4,
-    text: chalk.yellow("TETRIS") + " " + chalk.cyan("- ASCII Edition"),
+    leading: 0,
+    text:
+      chalk.cyan("###") +
+      "  " +
+      chalk.yellow("####") +
+      "  " +
+      chalk.green("###") +
+      "  " +
+      chalk.magenta("###") +
+      "   " +
+      chalk.red("#") +
+      "  " +
+      chalk.blue(" ##"),
   },
+  {
+    type: "content",
+    leading: 0,
+    text:
+      chalk.cyan(" #") +
+      "   " +
+      chalk.yellow("#") +
+      "     " +
+      chalk.green(" #") +
+      "   " +
+      chalk.magenta("# #") +
+      "  " +
+      chalk.red(" #") +
+      "  " +
+      chalk.blue("#"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text:
+      chalk.cyan(" #") +
+      "   " +
+      chalk.yellow("##") +
+      "    " +
+      chalk.green(" #") +
+      "   " +
+      chalk.magenta("##") +
+      "   " +
+      chalk.red(" #") +
+      "   " +
+      chalk.blue("##"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text:
+      chalk.cyan(" #") +
+      "   " +
+      chalk.yellow("#") +
+      "     " +
+      chalk.green(" #") +
+      "   " +
+      chalk.magenta("# #") +
+      "  " +
+      chalk.red(" #") +
+      "   " +
+      chalk.blue("  #"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text:
+      chalk.cyan(" #") +
+      "   " +
+      chalk.yellow("####") +
+      "   " +
+      chalk.green("#") +
+      "   " +
+      chalk.magenta("#  #") +
+      "  " +
+      chalk.red("#") +
+      "  " +
+      chalk.blue("##"),
+  },
+  { type: "empty" },
   { type: "divider" },
   { type: "empty" },
-  { type: "content", leading: 4, text: chalk.green("Press P to Play") },
+  {
+    type: "content",
+    leading: 0,
+    text: chalk.cyan("Rules:") + chalk.gray(" Stack falling blocks"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text: chalk.cyan("Arrow Keys:") + chalk.gray(" Move & Rotate"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text: chalk.cyan("Space:") + chalk.gray(" Pause  |  Q: Quit"),
+  },
+  { type: "empty" },
+  { type: "divider" },
   { type: "empty" },
   {
     type: "content",
-    leading: 4,
-    text: chalk.gray("Auto-playing demo below..."),
+    leading: 0,
+    text: chalk.gray("Original: Alexey Pajitnov (1984)"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text: chalk.gray("Author: ") + chalk.grey("Myron Apostolakis (2626)"),
+  },
+  { type: "empty" },
+  {
+    type: "content",
+    leading: 0,
+    text: chalk.cyan("https://github.com/myapos/ascii-tetris"),
   },
   { type: "empty" },
   { type: "bottom" },
