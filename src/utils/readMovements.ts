@@ -1,4 +1,4 @@
-import readFile from "utils/readFile";
+import readFile from "./readFile";
 import { join } from "path";
 import { fileURLToPath } from "url";
 import type { UserMove } from "src/types";

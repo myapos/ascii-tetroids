@@ -1,7 +1,7 @@
 import type { Chamber, ShapeCoords, UserMove, Pos } from "src/types";
-import isInBounds from "utils/isInBounds";
-import rotateMatrix from "utils/rotateMatrix";
-import clone from "utils/clone";
+import isInBounds from "src/utils/isInBounds";
+import rotateMatrix from "src/utils/rotateMatrix";
+import clone from "src/utils/clone";
 import {
   EMPTY,
   LIVE,

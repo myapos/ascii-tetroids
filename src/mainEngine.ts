@@ -1,7 +1,7 @@
 // it will be deprecated
 import type { Chamber, ShapeCoords, UserMove, Pos } from "src/types";
-import isInBounds from "utils/isInBounds";
-import rotateMatrix from "utils/rotateMatrix";
+import isInBounds from "src/utils/isInBounds";
+import rotateMatrix from "src/utils/rotateMatrix";
 import chalk from "chalk";
 import {
   REST,
@@ -19,7 +19,7 @@ import {
   MAXIMUM_SPEED,
 } from "src/constants/constants";
 import createShapes, { getShapes } from "src/shapes/createShapes";
-import clone from "utils/clone";
+import clone from "src/utils/clone";
 
 const shapes = createShapes();
 
