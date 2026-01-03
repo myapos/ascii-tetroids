@@ -73,8 +73,8 @@ export class Terminal {
       return chalk.cyan(cell);
     }
 
-    // All preview text and labels (letters except O, colon, double quote) in yellowBright
-    if (/[A-NP-Za-np-z:"' ⟳]/.test(cell)) {
+    // All preview text and labels (letters, colon, double quote) in yellowBright
+    if (/[A-Za-z:"' ⟳]/.test(cell)) {
       return chalk.yellowBright(cell);
     }
 

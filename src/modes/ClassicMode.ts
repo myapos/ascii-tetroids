@@ -75,7 +75,8 @@ export class ClassicMode implements IGameMode {
     gameState.previewChamber = PreviewManager.addPreviewNextShape(
       gameLoopState.newShapeIdx,
       gameState.previewChamber,
-      gameState.level
+      gameState.level,
+      gameState.score
     );
 
     // Set game as active
@@ -272,7 +273,8 @@ export class ClassicMode implements IGameMode {
     gameState.previewChamber = PreviewManager.addPreviewNextShape(
       gameLoopState.newShapeIdx,
       gameState.previewChamber,
-      gameState.level
+      gameState.level,
+      gameState.score
     );
 
     // Main game loop
@@ -375,6 +377,7 @@ export class ClassicMode implements IGameMode {
             this.gameLogic.checkFilledRows(gameState.chamber, NUM_OF_COLS);
           gameState.chamber = newChamb;
           gameState.totalFilledRows += numOfFilledRows;
+          gameState.score += numOfFilledRows;
 
           if (numOfFilledRows) {
             this.playLineComplete();
@@ -415,7 +418,8 @@ export class ClassicMode implements IGameMode {
         gameState.previewChamber = PreviewManager.addPreviewNextShape(
           gameLoopState.newShapeIdx,
           gameState.previewChamber,
-          gameState.level
+          gameState.level,
+          gameState.score
         );
         gameLoopState.hasRested = false;
       }

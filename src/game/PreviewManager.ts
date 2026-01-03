@@ -8,6 +8,7 @@ import {
   PREVIEW_LABELS,
   NEXT_WORD,
   LEVEL_WORD,
+  SCORE_WORD,
 } from "src/constants/constants";
 import { getShapes } from "src/shapes/createShapes";
 import clone from "src/utils/clone";
@@ -24,7 +25,8 @@ export class PreviewManager {
   static addPreviewNextShape(
     shapeIdx: number,
     previewChamber: Chamber,
-    curLevel: number
+    curLevel: number,
+    score: number = 0
   ): Chamber {
     const emptyRow = Array.from({ length: previewChamber[0].length }).map(
       () => PREVIEW
@@ -71,6 +73,23 @@ export class PreviewManager {
     // add cur level
     const curLevelInfo = [curLevel.toString()];
     shape.push(curLevelInfo);
+
+    // add empty row for spacing
+    shape.push(emptyRow);
+
+    // add score label
+    const scoreRow = [];
+    for (let i = 0; i < previewChamber[0].length; i++) {
+      if (i < SCORE_WORD.length) {
+        scoreRow.push(SCORE_WORD[i]);
+      } else {
+        scoreRow.push(PREVIEW);
+      }
+    }
+    shape.push(scoreRow);
+    // add score value
+    const scoreInfo = score.toString().split("");
+    shape.push(scoreInfo);
 
     // add empty row for spacing
     shape.push(emptyRow);
@@ -143,6 +162,7 @@ export class PreviewManager {
             shapeChar === LIVE ||
             NEXT_WORD.includes(shapeChar) ||
             LEVEL_WORD.includes(shapeChar) ||
+            SCORE_WORD.includes(shapeChar) ||
             PREVIEW_CONTROL_CHARS.includes(shapeChar) ||
             PREVIEW_LABELS.includes(shapeChar) ||
             Number.isSafeInteger(parseInt(shapeChar))
