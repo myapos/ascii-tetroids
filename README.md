@@ -9,6 +9,11 @@ npm install
 npm run dev
 ```
 
+## Requirements
+
+- **Node.js**: v20.7.0 or higher
+- **npm**: v10.1.0 or higher
+
 ## Tech Stack
 
 - **Language**: TypeScript 5.9
