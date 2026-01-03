@@ -8,7 +8,10 @@ export type InputEventType =
   | "quit"
   | "play"
   | "volume-up"
-  | "volume-down";
+  | "volume-down"
+  | "difficulty-easy"
+  | "difficulty-normal"
+  | "difficulty-hard";
 
 export interface InputEvent {
   type: InputEventType;
@@ -29,6 +32,26 @@ export class InputHandler {
 
   off(eventType: InputEventType, callback: (event: InputEvent) => void) {
     this.listeners.get(eventType)?.delete(callback);
+  }
+
+  registerDifficultySelectionHandlers(
+    easyCallback: (event: InputEvent) => void,
+    normalCallback: (event: InputEvent) => void,
+    hardCallback: (event: InputEvent) => void
+  ) {
+    this.on("difficulty-easy", easyCallback);
+    this.on("difficulty-normal", normalCallback);
+    this.on("difficulty-hard", hardCallback);
+  }
+
+  unregisterDifficultySelectionHandlers(
+    easyCallback: (event: InputEvent) => void,
+    normalCallback: (event: InputEvent) => void,
+    hardCallback: (event: InputEvent) => void
+  ) {
+    this.off("difficulty-easy", easyCallback);
+    this.off("difficulty-normal", normalCallback);
+    this.off("difficulty-hard", hardCallback);
   }
 
   emit(event: InputEvent) {
@@ -90,6 +113,13 @@ export class InputHandler {
         this.emit({ type: "volume-up", timestamp: Date.now() });
       } else if (key === "-" || key === "_") {
         this.emit({ type: "volume-down", timestamp: Date.now() });
+      }
+      if (key === "1") {
+        this.emit({ type: "difficulty-easy", timestamp: Date.now() });
+      } else if (key === "2") {
+        this.emit({ type: "difficulty-normal", timestamp: Date.now() });
+      } else if (key === "3") {
+        this.emit({ type: "difficulty-hard", timestamp: Date.now() });
       }
     });
 

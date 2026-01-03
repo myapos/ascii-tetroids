@@ -47,6 +47,22 @@ export class Terminal {
     this.clearLine();
   }
 
+  static moveCursorToBottom() {
+    // Move cursor to bottom of screen (row 999, effectively moves to end)
+    process.stdout.write("\x1b[999;1H");
+  }
+
+  static clearLinesUp(numLines: number) {
+    for (let i = 0; i < numLines; i++) {
+      this.clearPreviousLine();
+    }
+  }
+
+  static clearFromCursorToEndOfScreen() {
+    // Clear from cursor to end of screen
+    process.stdout.write("\x1b[J");
+  }
+
   static write(text: string) {
     process.stdout.write(text);
   }

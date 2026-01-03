@@ -1,11 +1,20 @@
 import type { GameState } from "src/domain/GameState";
 import type { IDifficultyLevel } from "src/difficulty/DifficultyLevel";
+import {
+  EasyDifficulty,
+  NormalDifficulty,
+  HardDifficulty,
+} from "src/difficulty/DifficultyLevel";
 import { GameLogic } from "src/game/GameLogic";
 import { Renderer } from "src/rendering/Renderer";
 import { InputHandler } from "src/input/InputHandler";
 import { Terminal } from "src/rendering/Terminal";
 import { PreviewManager } from "src/game/PreviewManager";
-import { MAX_CHAMBER_HEIGHT, NUM_OF_COLS } from "src/constants/constants";
+import {
+  MAX_CHAMBER_HEIGHT,
+  NUM_OF_COLS,
+  DIFFICULTY_SELECTION_TIMEOUT,
+} from "src/constants/constants";
 import { UserMove } from "src/types";
 import type { IGameMode } from "src/modes/IGameMode";
 import { SoundManager } from "src/audio/SoundManager";
@@ -22,6 +31,7 @@ export class ClassicMode implements IGameMode {
   private isInDemoMode = false;
   private soundManager: SoundManager;
   private backgroundMusic: BackgroundMusic;
+  private selectedDifficulty: IDifficultyLevel | null = null;
 
   constructor(
     gameLogic: GameLogic,
@@ -70,6 +80,7 @@ export class ClassicMode implements IGameMode {
     gameLoopState.gameOverHandled = false;
     gameLoopState.needsRender = false;
     this.demoMoveIndex = 0;
+    this.selectedDifficulty = null;
 
     // Initialize preview with the first shape
     gameState.previewChamber = PreviewManager.addPreviewNextShape(
@@ -109,6 +120,82 @@ export class ClassicMode implements IGameMode {
 
   private playGameLoss() {
     this.soundManager.play("gameLoss");
+  }
+
+  private showDifficultyMenuSync(): Promise<IDifficultyLevel> {
+    Terminal.write(
+      Terminal.colorizeText(
+        "\n\nSELECT DIFFICULTY:\n\n1 - Easy\n2 - Normal (default)\n3 - Hard\n\nSelection will default to Normal in 15 seconds...\n\n"
+      )
+    );
+
+    return new Promise((resolve) => {
+      let timeoutId: NodeJS.Timeout | null = null;
+
+      // Handle difficulty selection
+      const easyHandler = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        // Clear 12 lines to account for all spacing and text
+        for (let i = 0; i < 12; i++) {
+          Terminal.clearPreviousLine();
+        }
+        this.inputHandler.unregisterDifficultySelectionHandlers(
+          easyHandler,
+          normalHandler,
+          hardHandler
+        );
+        resolve(new EasyDifficulty());
+      };
+
+      const normalHandler = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        // Clear 12 lines to account for all spacing and text
+        for (let i = 0; i < 12; i++) {
+          Terminal.clearPreviousLine();
+        }
+        this.inputHandler.offDifficultySelection(
+          easyHandler,
+          normalHandler,
+          hardHandler
+        );
+        resolve(new NormalDifficulty());
+      };
+
+      const hardHandler = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        // Clear 12 lines to account for all spacing and text
+        for (let i = 0; i < 12; i++) {
+          Terminal.clearPreviousLine();
+        }
+        this.inputHandler.unregisterDifficultySelectionHandlers(
+          easyHandler,
+          normalHandler,
+          hardHandler
+        );
+        resolve(new HardDifficulty());
+      };
+
+      // Register handlers
+      this.inputHandler.registerDifficultySelectionHandlers(
+        easyHandler,
+        normalHandler,
+        hardHandler
+      );
+
+      // Set 15-second timeout to default to Normal
+      timeoutId = setTimeout(() => {
+        // Clear 12 lines (menu text + spacing)
+        for (let i = 0; i < 12; i++) {
+          Terminal.clearPreviousLine();
+        }
+        this.inputHandler.unregisterDifficultySelectionHandlers(
+          easyHandler,
+          normalHandler,
+          hardHandler
+        );
+        resolve(new NormalDifficulty());
+      }, DIFFICULTY_SELECTION_TIMEOUT);
+    });
   }
 
   async play(
@@ -186,45 +273,78 @@ export class ClassicMode implements IGameMode {
 
     this.inputHandler.on("play-again", () => {
       if (!gameState.isActive) {
-        this.resetGameLoopState(gameState, difficulty, gameLoopState);
+        // Show difficulty selection menu again
+        this.showDifficultyMenuSync()
+          .then((selectedDifficulty) => {
+            difficulty = selectedDifficulty;
+            this.resetGameLoopState(gameState, difficulty, gameLoopState);
+          })
+          .catch((err) => {
+            console.error(
+              "DEBUG: Error in difficulty selection (play-again):",
+              err
+            );
+          });
       }
     });
 
-    // Setup play listener for demo mode
-    if (this.demoSequence) {
+    // Setup play listener - only in demo mode
+    if (this.isInDemoMode) {
       this.inputHandler.on("play", () => {
-        // Ignore play if game is already active
-        if (gameState.isActive && !this.isInDemoMode) return;
+        // Ignore play if game is already active and not in demo
+        if (gameState.isActive && !this.isInDemoMode) {
+          return;
+        }
 
-        // Switch from demo mode to player mode
-        this.demoSequence = null;
-        this.isInDemoMode = false;
+        // Only show menu if we haven't already selected difficulty
+        if (this.selectedDifficulty !== null) {
+          console.log("DEBUG: Already selected difficulty, skipping menu");
+          return;
+        }
 
-        // Reset game loop state for fresh start
-        this.resetGameLoopState(gameState, difficulty, gameLoopState);
+        // Show difficulty selection menu
+        this.showDifficultyMenuSync()
+          .then((selectedDifficulty) => {
+            this.selectedDifficulty = selectedDifficulty;
 
-        // Enable movement input handlers for player mode
-        this.inputHandler.on("move-left", moveLeftHandler);
-        this.inputHandler.on("move-right", moveRightHandler);
-        this.inputHandler.on("move-down", moveDownHandler);
+            // Switch from demo mode to player mode
+            this.demoSequence = null;
+            this.isInDemoMode = false;
 
-        // Register pause handler now that we're in player mode
-        this.inputHandler.on("pause", () => {
-          // Ignore pause after game over
-          if (!gameState.isActive) return;
+            // Update difficulty reference
+            difficulty = selectedDifficulty;
 
-          gameState.isPaused = !gameState.isPaused;
-          if (gameState.isPaused) {
-            Terminal.write(
-              Terminal.colorizeText("GAME PAUSED - Press 'space' to resume\n")
-            );
-          } else {
-            Terminal.clearPreviousLine();
-            gameLoopState.needsRender = true;
-          }
-        });
+            // Reset game loop state for fresh start
+            this.resetGameLoopState(gameState, difficulty, gameLoopState);
 
-        this.clearFooter();
+            // Enable movement input handlers for player mode
+            this.inputHandler.on("move-left", moveLeftHandler);
+            this.inputHandler.on("move-right", moveRightHandler);
+            this.inputHandler.on("move-down", moveDownHandler);
+
+            // Register pause handler now that we're in player mode
+            this.inputHandler.on("pause", () => {
+              // Ignore pause after game over
+              if (!gameState.isActive) return;
+
+              gameState.isPaused = !gameState.isPaused;
+              if (gameState.isPaused) {
+                Terminal.write(
+                  Terminal.colorizeText(
+                    "GAME PAUSED - Press 'space' to resume\n"
+                  )
+                );
+              } else {
+                Terminal.clearPreviousLine();
+                gameLoopState.needsRender = true;
+              }
+            });
+
+            this.clearFooter();
+          })
+          .catch((err) => {
+            console.error("DEBUG: Error in difficulty selection:", err);
+          });
       });
     }
 
