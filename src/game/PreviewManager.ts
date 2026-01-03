@@ -10,6 +10,7 @@ import {
   LEVEL_WORD,
 } from "src/constants/constants";
 import { getShapes } from "src/shapes/createShapes";
+import clone from "src/utils/clone";
 
 export class PreviewManager {
   static emptyPreviewArea(previewChamber: Chamber): void {
@@ -29,7 +30,8 @@ export class PreviewManager {
       () => PREVIEW
     );
 
-    const shape = getShapes().get(shapeIdx)!;
+    // Clone the shape to avoid mutating the cached original
+    const shape = clone(getShapes().get(shapeIdx)!);
     this.emptyPreviewArea(previewChamber);
 
     // add a row with the word 'NEXT'
