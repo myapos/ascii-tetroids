@@ -42,7 +42,7 @@ describe("InputHandler", () => {
         "pause",
         "play-again",
         "quit",
-        "start-game",
+        "play",
       ];
 
       eventTypes.forEach((eventType) => {

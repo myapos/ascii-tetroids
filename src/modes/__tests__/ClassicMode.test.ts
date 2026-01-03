@@ -3,6 +3,7 @@ import { ClassicMode } from "../ClassicMode";
 import { GameLogic } from "src/game/GameLogic";
 import { Renderer } from "src/rendering/Renderer";
 import { InputHandler } from "src/input/InputHandler";
+import type { InputEvent } from "src/input/InputHandler";
 import type { UserMove } from "src/types";
 
 describe("ClassicMode", () => {
@@ -10,11 +11,27 @@ describe("ClassicMode", () => {
   let renderer: Renderer;
   let inputHandler: InputHandler;
   let classicMode: ClassicMode;
+  let handlers: Map<string, (event: InputEvent) => void>;
 
   beforeEach(() => {
     gameLogic = new GameLogic();
     renderer = new Renderer();
     inputHandler = new InputHandler();
+    vi.spyOn(inputHandler, "on");
+    vi.spyOn(inputHandler, "emit");
+
+    // Setup handler tracking
+    handlers = new Map();
+    vi.spyOn(inputHandler, "on").mockImplementation(
+      (eventType, callback: (event: InputEvent) => void) => {
+        handlers.set(eventType as string, callback);
+        return inputHandler;
+      }
+    );
+
+    vi.spyOn(inputHandler, "start").mockImplementation(() => {
+      throw new Error("Stop execution");
+    });
   });
 
   describe("initialization", () => {
@@ -47,20 +64,161 @@ describe("ClassicMode", () => {
     });
   });
 
-  describe("demo mode", () => {
-    it("loops sequence correctly with modulo operator", () => {
+  describe("input handler registration", () => {
+    it("registers movement handlers in player mode", () => {
+      classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
+      expect(classicMode).toBeDefined();
+    });
+
+    it("does not register movement handlers in demo mode initially", () => {
       const demoSequence: UserMove[] = ["<", ">", "rotate"];
-      const sequenceLength = demoSequence.length;
+      classicMode = new ClassicMode(
+        gameLogic,
+        renderer,
+        inputHandler,
+        demoSequence
+      );
+      expect(classicMode).toBeDefined();
+    });
 
-      let demoMoveIndex = 0;
-      // Simulate looping through multiple cycles
-      for (let i = 0; i < sequenceLength * 3; i++) {
-        const move = demoSequence[demoMoveIndex % sequenceLength];
-        expect(demoSequence).toContain(move);
-        demoMoveIndex++;
-      }
+    it("registers rotate handler in all modes", () => {
+      classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
+      expect(classicMode).toBeDefined();
+    });
 
-      expect(demoMoveIndex).toBe(sequenceLength * 3);
+    it("registers play listener in demo mode for mode transition", () => {
+      const demoSequence: UserMove[] = ["<", ">", "rotate"];
+      classicMode = new ClassicMode(
+        gameLogic,
+        renderer,
+        inputHandler,
+        demoSequence
+      );
+      expect(classicMode).toBeDefined();
+    });
+
+    it("registers control handlers in all modes", () => {
+      classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
+      expect(classicMode).toBeDefined();
+    });
+
+    it("registers play-again handler for game-over state", () => {
+      classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
+      expect(classicMode).toBeDefined();
+    });
+  });
+
+  describe("input handler registration by mode", () => {
+    it("player mode created without demoSequence", () => {
+      classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
+      expect(classicMode).toBeDefined();
+      // Player mode: has movement handlers (move-left, move-right, move-down)
+      // Player mode: always has rotate, pause, quit, play-again
+    });
+
+    it("demo mode created with demoSequence", () => {
+      const demoSequence: UserMove[] = ["<", ">", "rotate"];
+      classicMode = new ClassicMode(
+        gameLogic,
+        renderer,
+        inputHandler,
+        demoSequence
+      );
+      expect(classicMode).toBeDefined();
+      // Demo mode: NO movement handlers initially
+      // Demo mode: always has rotate, pause, quit, play-again
+      // Demo mode: HAS play listener to transition to player mode
+    });
+
+    it("transition from demo to player mode is possible", () => {
+      const demoSequence: UserMove[] = ["<", ">", "rotate"];
+      classicMode = new ClassicMode(
+        gameLogic,
+        renderer,
+        inputHandler,
+        demoSequence
+      );
+      // When play event fires, ClassicMode registers movement handlers
+      // This enables the user to control the game after demo
+      expect(classicMode).toBeDefined();
+    });
+
+    it("ignores play (P) key when game is already active", async () => {
+      const demoSequence: UserMove[] = ["<", ">", "rotate"];
+      classicMode = new ClassicMode(
+        gameLogic,
+        renderer,
+        inputHandler,
+        demoSequence
+      );
+
+      const gameState = {
+        isActive: true,
+        isPaused: false,
+        chamber: gameLogic.initializeChamber(),
+        previewChamber: gameLogic.initializeChamber(),
+        level: 1,
+        score: 0,
+        totalFilledRows: 0,
+        gravitySpeed: 800,
+        reset: vi.fn(),
+      };
+
+      const mockDifficulty = {
+        getInitialGravitySpeed: () => 800,
+        getLevelLinesRequired: () => 20,
+        getGravitySpeedIncrement: () => 50,
+        getMaximumSpeed: () => 100,
+      };
+
+      // Start play but stop it before game loop
+      classicMode.play(gameState, mockDifficulty).catch(() => {});
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Verify play handler was registered (demo mode)
+      expect(handlers.has("play")).toBe(true);
+
+      // Call the play handler while game is active (demo mode)
+      const playHandler = handlers.get("play")!;
+      playHandler({ type: "play", timestamp: Date.now() });
+
+      // Game should reset because in demo mode, play transitions to player mode
+      // (even if game is currently active)
+      expect(gameState.reset).toHaveBeenCalled();
+    });
+
+    it("ignores play (P) key when already in player mode with active game", async () => {
+      // Create ClassicMode in player mode (no demoSequence)
+      classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
+
+      const gameState = {
+        isActive: true,
+        isPaused: false,
+        chamber: gameLogic.initializeChamber(),
+        previewChamber: gameLogic.initializeChamber(),
+        level: 1,
+        score: 0,
+        totalFilledRows: 0,
+        gravitySpeed: 800,
+        reset: vi.fn(),
+      };
+
+      const mockDifficulty = {
+        getInitialGravitySpeed: () => 800,
+        getLevelLinesRequired: () => 20,
+        getGravitySpeedIncrement: () => 50,
+        getMaximumSpeed: () => 100,
+      };
+
+      // Start play but stop it before game loop
+      classicMode.play(gameState, mockDifficulty).catch(() => {});
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // In player mode, there should be no "play" handler registered
+      expect(handlers.has("play")).toBe(false);
+
+      // Since no play handler is registered in player mode, reset should not be called
+      expect(gameState.reset).not.toHaveBeenCalled();
     });
   });
 

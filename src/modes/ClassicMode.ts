@@ -16,6 +16,8 @@ export class ClassicMode implements IGameMode {
   private demoSequence: UserMove[] | null = null;
   private demoMoveIndex = 0;
   private onRenderCallback: (() => void) | null = null;
+  private rotateListener: ((event: unknown) => void) | null = null;
+  private isInDemoMode = false;
 
   constructor(
     gameLogic: GameLogic,
@@ -28,6 +30,7 @@ export class ClassicMode implements IGameMode {
     this.renderer = renderer;
     this.inputHandler = inputHandler;
     this.demoSequence = demoSequence || null;
+    this.isInDemoMode = demoSequence ? demoSequence.length > 0 : false;
     this.onRenderCallback = onRenderCallback || null;
   }
 
@@ -40,6 +43,7 @@ export class ClassicMode implements IGameMode {
       hasRested: boolean;
       newShapeIdx: number;
       gameOverHandled: boolean;
+      needsRender: boolean;
     }
   ): void {
     gameState.reset(
@@ -56,6 +60,7 @@ export class ClassicMode implements IGameMode {
       Math.random() * this.gameLogic.getShapes().size
     );
     gameLoopState.gameOverHandled = false;
+    gameLoopState.needsRender = false;
     this.demoMoveIndex = 0;
 
     // Initialize preview with the first shape
@@ -69,6 +74,12 @@ export class ClassicMode implements IGameMode {
     gameState.isActive = true;
   }
 
+  private clearFooter(): void {
+    Terminal.clearPreviousLine();
+    Terminal.clearPreviousLine();
+    Terminal.clearPreviousLine();
+  }
+
   async play(
     gameState: GameState,
     difficulty: IDifficultyLevel
@@ -80,37 +91,50 @@ export class ClassicMode implements IGameMode {
       hasRested: false,
       newShapeIdx: Math.floor(Math.random() * this.gameLogic.getShapes().size),
       gameOverHandled: false,
+      needsRender: false,
     };
 
     const MAX_QUEUE_SIZE = 2000;
     const shapes = this.gameLogic.getShapes();
 
-    // Setup shape movement input handlers - disabled in demo mode
+    // Define movement handlers (for player mode)
+    const moveLeftHandler = () => {
+      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+        gameLoopState.keyQueue.push("<");
+      }
+    };
+
+    const moveRightHandler = () => {
+      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+        gameLoopState.keyQueue.push(">");
+      }
+    };
+
+    const moveDownHandler = () => {
+      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+        gameLoopState.keyQueue.push("down");
+      }
+    };
+
+    // Register movement handlers only in player mode
     if (!this.demoSequence?.length) {
-      this.inputHandler.on("move-left", () => {
-        if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
-          gameLoopState.keyQueue.push("<");
-        }
-      });
-
-      this.inputHandler.on("move-right", () => {
-        if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
-          gameLoopState.keyQueue.push(">");
-        }
-      });
-
-      this.inputHandler.on("move-down", () => {
-        if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
-          gameLoopState.keyQueue.push("down");
-        }
-      });
-
-      this.inputHandler.on("rotate", () => {
-        if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
-          gameLoopState.keyQueue.push("rotate");
-        }
-      });
+      this.inputHandler.on("move-left", moveLeftHandler);
+      this.inputHandler.on("move-right", moveRightHandler);
+      this.inputHandler.on("move-down", moveDownHandler);
     }
+
+    // Rotate is always available (player mode and can be used during demo to switch)
+    // Remove old listener if it exists (from previous play() call)
+    if (this.rotateListener) {
+      this.inputHandler.off("rotate", this.rotateListener);
+    }
+
+    this.rotateListener = () => {
+      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+        gameLoopState.keyQueue.push("rotate");
+      }
+    };
+    this.inputHandler.on("rotate", this.rotateListener);
 
     this.inputHandler.on("play-again", () => {
       if (!gameState.isActive) {
@@ -118,66 +142,61 @@ export class ClassicMode implements IGameMode {
       }
     });
 
-    // Setup start-game listener for demo mode
+    // Setup play listener for demo mode
     if (this.demoSequence) {
-      const moveLeftHandler = () => {
-        if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
-          gameLoopState.keyQueue.push("<");
-        }
-      };
+      this.inputHandler.on("play", () => {
+        // Ignore play if game is already active
+        if (gameState.isActive && !this.isInDemoMode) return;
 
-      const moveRightHandler = () => {
-        if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
-          gameLoopState.keyQueue.push(">");
-        }
-      };
-
-      const moveDownHandler = () => {
-        if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
-          gameLoopState.keyQueue.push("down");
-        }
-      };
-
-      const rotateHandler = () => {
-        if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
-          gameLoopState.keyQueue.push("rotate");
-        }
-      };
-
-      this.inputHandler.on("start-game", () => {
         // Switch from demo mode to player mode
         this.demoSequence = null;
+        this.isInDemoMode = false;
 
         // Reset game loop state for fresh start
         this.resetGameLoopState(gameState, difficulty, gameLoopState);
 
-        // Enable movement input handlers
+        // Enable movement input handlers for player mode
         this.inputHandler.on("move-left", moveLeftHandler);
         this.inputHandler.on("move-right", moveRightHandler);
         this.inputHandler.on("move-down", moveDownHandler);
-        this.inputHandler.on("rotate", rotateHandler);
 
-        // Clear footer (3 lines)
-        Terminal.clearPreviousLine();
-        Terminal.clearPreviousLine();
-        Terminal.clearPreviousLine();
+        // Register pause handler now that we're in player mode
+        this.inputHandler.on("pause", () => {
+          // Ignore pause after game over
+          if (!gameState.isActive) return;
+
+          gameState.isPaused = !gameState.isPaused;
+          if (gameState.isPaused) {
+            Terminal.write(
+              Terminal.colorizeText("GAME PAUSED - Press 'space' to resume\n")
+            );
+          } else {
+            Terminal.clearPreviousLine();
+            gameLoopState.needsRender = true;
+          }
+        });
+
+        this.clearFooter();
       });
     }
 
-    // Setup control handlers - always enabled (pause and quit work in all modes)
-    this.inputHandler.on("pause", () => {
-      gameState.isPaused = !gameState.isPaused;
-      if (gameState.isPaused) {
-        Terminal.clearPreviousLine();
-        Terminal.clearPreviousLine();
-        Terminal.write(
-          Terminal.colorizeText("\nGAME PAUSED - Press 'space' to resume\n")
-        );
-      } else {
-        Terminal.clearPreviousLine();
-        Terminal.clearPreviousLine();
-      }
-    });
+    // Setup control handlers - pause enabled only in player mode
+    if (!this.isInDemoMode) {
+      this.inputHandler.on("pause", () => {
+        // Ignore pause after game over
+        if (!gameState.isActive) return;
+
+        gameState.isPaused = !gameState.isPaused;
+        if (gameState.isPaused) {
+          Terminal.write(
+            Terminal.colorizeText("GAME PAUSED - Press 'space' to resume\n")
+          );
+        } else {
+          Terminal.clearPreviousLine();
+          gameLoopState.needsRender = true;
+        }
+      });
+    }
 
     this.inputHandler.on("quit", () => {
       gameState.isActive = false;
@@ -333,11 +352,14 @@ export class ClassicMode implements IGameMode {
         gameLoopState.hasRested = false;
       }
 
-      // Render once per frame
-      await this.renderer.renderFrame(
-        gameState.chamber,
-        gameState.previewChamber
-      );
+      // Render once per frame (or when forced, e.g., after unpausing)
+      if (gameLoopState.needsRender || !gameState.isPaused) {
+        await this.renderer.renderFrame(
+          gameState.chamber,
+          gameState.previewChamber
+        );
+        gameLoopState.needsRender = false;
+      }
 
       // Call render callback only if still in demo mode
       if (this.onRenderCallback && this.demoSequence) {

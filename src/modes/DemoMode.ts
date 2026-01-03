@@ -14,6 +14,7 @@ import {
   splashScreenLines,
 } from "src/modes/splashScreenConfig";
 import { demoFooterConfig, demoFooterLines } from "src/modes/demoFooterConfig";
+import { SPLASH_SCREEN_DELAY } from "src/constants/constants";
 
 export class DemoMode implements IGameMode {
   private gameLogic: GameLogic;
@@ -21,6 +22,7 @@ export class DemoMode implements IGameMode {
   private inputHandler: InputHandler;
   private classicMode!: ClassicMode;
   private wasUserInitiated = false;
+  private playListener: ((event: unknown) => void) | null = null;
 
   constructor(
     gameLogic: GameLogic,
@@ -51,22 +53,42 @@ export class DemoMode implements IGameMode {
     this.displaySplashScreen();
 
     // Wait for user to press P or timeout
-    await this.waitForPlayOrTimeout();
+    const userInitiatedPlay = await this.waitForPlayOrTimeout();
 
-    // Run demo with ClassicMode using predefined sequence
-    // (whether user pressed P or timeout occurred)
-    await this.classicMode.play(gameState, difficulty);
+    // Clean up splash screen listener before entering game mode
+    if (this.playListener) {
+      this.inputHandler.off("play", this.playListener);
+    }
+
+    const mode = new ClassicMode(
+      this.gameLogic,
+      this.renderer,
+      this.inputHandler,
+      userInitiatedPlay ? undefined : await readMovements(),
+      userInitiatedPlay ? undefined : () => this.displayDemoFooter()
+    );
+    await mode.play(gameState, difficulty);
   }
 
-  private async waitForPlayOrTimeout(): Promise<void> {
-    return new Promise<void>((resolve) => {
+  private async waitForPlayOrTimeout(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      let userPressed = false;
+
+      this.playListener = () => {
+        userPressed = true;
+        this.wasUserInitiated = true;
+        resolve(true);
+      };
+
+      this.inputHandler.on("play", this.playListener);
       this.inputHandler.start();
 
       // Timeout after 10 seconds to auto-start demo
       setTimeout(() => {
-        this.inputHandler.stop();
-        resolve();
-      }, 10000);
+        if (!userPressed) {
+          resolve(false);
+        }
+      }, SPLASH_SCREEN_DELAY);
     });
   }
 

@@ -6,7 +6,7 @@ export type InputEventType =
   | "pause"
   | "play-again"
   | "quit"
-  | "start-game";
+  | "play";
 
 export interface InputEvent {
   type: InputEventType;
@@ -37,6 +37,11 @@ export class InputHandler {
   }
 
   start() {
+    // Prevent registering stdin listener multiple times
+    if (this.isListening) {
+      return;
+    }
+
     const isInDebugMode = typeof process.stdin.setRawMode === "undefined";
 
     if (isInDebugMode) {
@@ -63,7 +68,7 @@ export class InputHandler {
       }
 
       if (key === "p" || key === "P") {
-        this.emit({ type: "start-game", timestamp: Date.now() });
+        this.emit({ type: "play", timestamp: Date.now() });
       }
 
       if (key === "r" || key === "R") {
