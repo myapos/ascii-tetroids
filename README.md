@@ -154,6 +154,6 @@ This approach provides:
   - [ ] if not then move all columns with no support down until they find
 - [x] colors in ascii chars
 - [x] add auto mode
-- [ ] add music
+- [x] add music
 - [x] instructions for pausing in preview
 - [ ] deb packaging
