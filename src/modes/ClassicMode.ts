@@ -348,7 +348,6 @@ export class ClassicMode implements IGameMode {
           gameState.previewChamber,
           gameState.level
         );
-        gameLoopState.newShapeIdx = Math.floor(Math.random() * shapes.size);
         gameLoopState.hasRested = false;
       }
 
