@@ -139,9 +139,11 @@ export class ClassicMode implements IGameMode {
         for (let i = 0; i < 12; i++) {
           Terminal.clearPreviousLine();
         }
-        this.inputHandler.off("difficulty-easy", easyHandler);
-        this.inputHandler.off("difficulty-normal", normalHandler);
-        this.inputHandler.off("difficulty-hard", hardHandler);
+        this.inputHandler.unregisterDifficultySelectionHandlers(
+          easyHandler,
+          normalHandler,
+          hardHandler
+        );
         resolve(new EasyDifficulty());
       };
 
@@ -151,9 +153,11 @@ export class ClassicMode implements IGameMode {
         for (let i = 0; i < 12; i++) {
           Terminal.clearPreviousLine();
         }
-        this.inputHandler.off("difficulty-easy", easyHandler);
-        this.inputHandler.off("difficulty-normal", normalHandler);
-        this.inputHandler.off("difficulty-hard", hardHandler);
+        this.inputHandler.offDifficultySelection(
+          easyHandler,
+          normalHandler,
+          hardHandler
+        );
         resolve(new NormalDifficulty());
       };
 
@@ -163,16 +167,20 @@ export class ClassicMode implements IGameMode {
         for (let i = 0; i < 12; i++) {
           Terminal.clearPreviousLine();
         }
-        this.inputHandler.off("difficulty-easy", easyHandler);
-        this.inputHandler.off("difficulty-normal", normalHandler);
-        this.inputHandler.off("difficulty-hard", hardHandler);
+        this.inputHandler.unregisterDifficultySelectionHandlers(
+          easyHandler,
+          normalHandler,
+          hardHandler
+        );
         resolve(new HardDifficulty());
       };
 
       // Register handlers
-      this.inputHandler.on("difficulty-easy", easyHandler);
-      this.inputHandler.on("difficulty-normal", normalHandler);
-      this.inputHandler.on("difficulty-hard", hardHandler);
+      this.inputHandler.registerDifficultySelectionHandlers(
+        easyHandler,
+        normalHandler,
+        hardHandler
+      );
 
       // Set 15-second timeout to default to Normal
       timeoutId = setTimeout(() => {
@@ -180,9 +188,11 @@ export class ClassicMode implements IGameMode {
         for (let i = 0; i < 12; i++) {
           Terminal.clearPreviousLine();
         }
-        this.inputHandler.off("difficulty-easy", easyHandler);
-        this.inputHandler.off("difficulty-normal", normalHandler);
-        this.inputHandler.off("difficulty-hard", hardHandler);
+        this.inputHandler.unregisterDifficultySelectionHandlers(
+          easyHandler,
+          normalHandler,
+          hardHandler
+        );
         resolve(new NormalDifficulty());
       }, DIFFICULTY_SELECTION_TIMEOUT);
     });

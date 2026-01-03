@@ -34,6 +34,26 @@ export class InputHandler {
     this.listeners.get(eventType)?.delete(callback);
   }
 
+  registerDifficultySelectionHandlers(
+    easyCallback: (event: InputEvent) => void,
+    normalCallback: (event: InputEvent) => void,
+    hardCallback: (event: InputEvent) => void
+  ) {
+    this.on("difficulty-easy", easyCallback);
+    this.on("difficulty-normal", normalCallback);
+    this.on("difficulty-hard", hardCallback);
+  }
+
+  unregisterDifficultySelectionHandlers(
+    easyCallback: (event: InputEvent) => void,
+    normalCallback: (event: InputEvent) => void,
+    hardCallback: (event: InputEvent) => void
+  ) {
+    this.off("difficulty-easy", easyCallback);
+    this.off("difficulty-normal", normalCallback);
+    this.off("difficulty-hard", hardCallback);
+  }
+
   emit(event: InputEvent) {
     const callbacks = this.listeners.get(event.type);
     if (callbacks) {

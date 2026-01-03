@@ -145,9 +145,11 @@ export class DemoMode implements IGameMode {
 
       const cleanup = () => {
         this.menuActive = false;
-        this.inputHandler.off("difficulty-easy", easyHandler);
-        this.inputHandler.off("difficulty-normal", normalHandler);
-        this.inputHandler.off("difficulty-hard", hardHandler);
+        this.inputHandler.unregisterDifficultySelectionHandlers(
+          easyHandler,
+          normalHandler,
+          hardHandler
+        );
       };
 
       const easyHandler = () => {
@@ -177,9 +179,11 @@ export class DemoMode implements IGameMode {
         resolve(new HardDifficulty());
       };
 
-      this.inputHandler.on("difficulty-easy", easyHandler);
-      this.inputHandler.on("difficulty-normal", normalHandler);
-      this.inputHandler.on("difficulty-hard", hardHandler);
+      this.inputHandler.registerDifficultySelectionHandlers(
+        easyHandler,
+        normalHandler,
+        hardHandler
+      );
 
       timeoutId = setTimeout(() => {
         console.clear();
