@@ -91,7 +91,7 @@ const TETROIDS = [
       "  " +
       chalk.magenta("###") +
       "  " +
-      chalk.red("###") +
+      chalk.red("####") +
       "  " +
       chalk.blue("#") +
       "  " +
@@ -111,7 +111,7 @@ const TETROIDS = [
       "   " +
       chalk.magenta("# #") +
       "  " +
-      chalk.red("# #") +
+      chalk.red("#  #") +
       "  " +
       chalk.blue("#") +
       "  " +
@@ -131,7 +131,7 @@ const TETROIDS = [
       "   " +
       chalk.magenta("##") +
       "   " +
-      chalk.red("# #") +
+      chalk.red("#  #") +
       "  " +
       chalk.blue("#") +
       "  " +
@@ -151,7 +151,7 @@ const TETROIDS = [
       "   " +
       chalk.magenta("# #") +
       "  " +
-      chalk.red("# #") +
+      chalk.red("#  #") +
       "  " +
       chalk.blue("#") +
       "  " +
@@ -171,7 +171,7 @@ const TETROIDS = [
       "   " +
       chalk.magenta("#  #") +
       " " +
-      chalk.red("###") +
+      chalk.red("####") +
       "  " +
       chalk.blue("#") +
       "  " +

@@ -3,6 +3,7 @@ import { ClassicMode } from "../ClassicMode";
 import { GameLogic } from "src/game/GameLogic";
 import { Renderer } from "src/rendering/Renderer";
 import { InputHandler } from "src/input/InputHandler";
+import { DIFFICULTY_SELECTION_TIMEOUT } from "src/constants/constants";
 import type { InputEvent } from "src/input/InputHandler";
 import type { UserMove } from "src/types";
 
@@ -144,47 +145,61 @@ describe("ClassicMode", () => {
     });
 
     it("ignores play (P) key when game is already active", async () => {
-      const demoSequence: UserMove[] = ["<", ">", "rotate"];
-      classicMode = new ClassicMode(
-        gameLogic,
-        renderer,
-        inputHandler,
-        demoSequence
-      );
+      vi.useFakeTimers();
+      try {
+        const demoSequence: UserMove[] = ["<", ">", "rotate"];
+        classicMode = new ClassicMode(
+          gameLogic,
+          renderer,
+          inputHandler,
+          demoSequence
+        );
 
-      const gameState = {
-        isActive: true,
-        isPaused: false,
-        chamber: gameLogic.initializeChamber(),
-        previewChamber: gameLogic.initializeChamber(),
-        level: 1,
-        score: 0,
-        totalFilledRows: 0,
-        gravitySpeed: 800,
-        reset: vi.fn(),
-      };
+        const gameState = {
+          isActive: true,
+          isPaused: false,
+          chamber: gameLogic.initializeChamber(),
+          previewChamber: gameLogic.initializeChamber(),
+          level: 1,
+          score: 0,
+          totalFilledRows: 0,
+          gravitySpeed: 800,
+          reset: vi.fn(),
+        };
 
-      const mockDifficulty = {
-        getInitialGravitySpeed: () => 800,
-        getLevelLinesRequired: () => 20,
-        getGravitySpeedIncrement: () => 50,
-        getMaximumSpeed: () => 100,
-      };
+        const mockDifficulty = {
+          getInitialGravitySpeed: () => 800,
+          getLevelLinesRequired: () => 20,
+          getGravitySpeedIncrement: () => 50,
+          getMaximumSpeed: () => 100,
+        };
 
-      // Start play but stop it before game loop
-      classicMode.play(gameState, mockDifficulty).catch(() => {});
-      await new Promise((resolve) => setTimeout(resolve, 50));
+        // Start play but stop it before game loop
+        classicMode.play(gameState, mockDifficulty).catch(() => {});
+        await vi.advanceTimersByTimeAsync(50);
 
-      // Verify play handler was registered (demo mode)
-      expect(handlers.has("play")).toBe(true);
+        // Verify play handler was registered (demo mode)
+        expect(handlers.has("play")).toBe(true);
 
-      // Call the play handler while game is active (demo mode)
-      const playHandler = handlers.get("play")!;
-      playHandler({ type: "play", timestamp: Date.now() });
+        // Call the play handler while game is active (demo mode)
+        const playHandler = handlers.get("play")!;
+        const handlerPromise = playHandler({
+          type: "play",
+          timestamp: Date.now(),
+        });
 
-      // Game should reset because in demo mode, play transitions to player mode
-      // (even if game is currently active)
-      expect(gameState.reset).toHaveBeenCalled();
+        // Let menu show then advance time to trigger the default timeout (15 seconds)
+        await vi.advanceTimersByTimeAsync(DIFFICULTY_SELECTION_TIMEOUT);
+
+        // Wait for handler to complete
+        await handlerPromise;
+
+        // Game should reset because in demo mode, play transitions to player mode
+        // (even if game is currently active)
+        expect(gameState.reset).toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it("ignores play (P) key when already in player mode with active game", async () => {

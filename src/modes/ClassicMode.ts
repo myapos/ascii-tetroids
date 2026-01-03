@@ -10,7 +10,11 @@ import { Renderer } from "src/rendering/Renderer";
 import { InputHandler } from "src/input/InputHandler";
 import { Terminal } from "src/rendering/Terminal";
 import { PreviewManager } from "src/game/PreviewManager";
-import { MAX_CHAMBER_HEIGHT, NUM_OF_COLS } from "src/constants/constants";
+import {
+  MAX_CHAMBER_HEIGHT,
+  NUM_OF_COLS,
+  DIFFICULTY_SELECTION_TIMEOUT,
+} from "src/constants/constants";
 import { UserMove } from "src/types";
 import type { IGameMode } from "src/modes/IGameMode";
 import { SoundManager } from "src/audio/SoundManager";
@@ -76,6 +80,7 @@ export class ClassicMode implements IGameMode {
     gameLoopState.gameOverHandled = false;
     gameLoopState.needsRender = false;
     this.demoMoveIndex = 0;
+    this.selectedDifficulty = null;
 
     // Initialize preview with the first shape
     gameState.previewChamber = PreviewManager.addPreviewNextShape(
@@ -118,13 +123,11 @@ export class ClassicMode implements IGameMode {
   }
 
   private showDifficultyMenuSync(): Promise<IDifficultyLevel> {
-    console.log("DEBUG: Entering showDifficultyMenuSync");
     Terminal.write(
       Terminal.colorizeText(
         "\n\nSELECT DIFFICULTY:\n\n1 - Easy\n2 - Normal (default)\n3 - Hard\n\nSelection will default to Normal in 15 seconds...\n\n"
       )
     );
-    console.log("DEBUG: Menu text written to terminal");
 
     return new Promise((resolve) => {
       let timeoutId: NodeJS.Timeout | null = null;
@@ -181,7 +184,7 @@ export class ClassicMode implements IGameMode {
         this.inputHandler.off("difficulty-normal", normalHandler);
         this.inputHandler.off("difficulty-hard", hardHandler);
         resolve(new NormalDifficulty());
-      }, 15000);
+      }, DIFFICULTY_SELECTION_TIMEOUT);
     });
   }
 
@@ -260,78 +263,80 @@ export class ClassicMode implements IGameMode {
 
     this.inputHandler.on("play-again", () => {
       if (!gameState.isActive) {
-        this.resetGameLoopState(gameState, difficulty, gameLoopState);
-      }
-    });
-
-    // Setup play listener - works from splash screen and during demo
-    this.inputHandler.on("play", () => {
-      console.log(
-        "DEBUG: Play event triggered, isActive:",
-        gameState.isActive,
-        "isInDemoMode:",
-        this.isInDemoMode
-      );
-      // Ignore play if game is already active and not in demo
-      if (gameState.isActive && !this.isInDemoMode) {
-        console.log(
-          "DEBUG: Ignoring play event - game is active and not in demo"
-        );
-        return;
-      }
-
-      // Only show menu if we haven't already selected difficulty
-      if (this.selectedDifficulty !== null) {
-        console.log("DEBUG: Already selected difficulty, skipping menu");
-        return;
-      }
-
-      // Show difficulty selection menu
-      this.showDifficultyMenuSync()
-        .then((selectedDifficulty) => {
-          console.log(
-            "DEBUG: Difficulty selected:",
-            selectedDifficulty.constructor.name
-          );
-          this.selectedDifficulty = selectedDifficulty;
-
-          // Switch from demo mode to player mode
-          this.demoSequence = null;
-          this.isInDemoMode = false;
-
-          // Update difficulty reference
-          difficulty = selectedDifficulty;
-
-          // Reset game loop state for fresh start
-          this.resetGameLoopState(gameState, difficulty, gameLoopState);
-
-          // Enable movement input handlers for player mode
-          this.inputHandler.on("move-left", moveLeftHandler);
-          this.inputHandler.on("move-right", moveRightHandler);
-          this.inputHandler.on("move-down", moveDownHandler);
-
-          // Register pause handler now that we're in player mode
-          this.inputHandler.on("pause", () => {
-            // Ignore pause after game over
-            if (!gameState.isActive) return;
-
-            gameState.isPaused = !gameState.isPaused;
-            if (gameState.isPaused) {
-              Terminal.write(
-                Terminal.colorizeText("GAME PAUSED - Press 'space' to resume\n")
-              );
-            } else {
-              Terminal.clearPreviousLine();
-              gameLoopState.needsRender = true;
-            }
+        // Show difficulty selection menu again
+        this.showDifficultyMenuSync()
+          .then((selectedDifficulty) => {
+            difficulty = selectedDifficulty;
+            this.resetGameLoopState(gameState, difficulty, gameLoopState);
+          })
+          .catch((err) => {
+            console.error(
+              "DEBUG: Error in difficulty selection (play-again):",
+              err
+            );
           });
-
-          this.clearFooter();
-        })
-        .catch((err) => {
-          console.error("DEBUG: Error in difficulty selection:", err);
-        });
+      }
     });
+
+    // Setup play listener - only in demo mode
+    if (this.isInDemoMode) {
+      this.inputHandler.on("play", () => {
+        // Ignore play if game is already active and not in demo
+        if (gameState.isActive && !this.isInDemoMode) {
+          return;
+        }
+
+        // Only show menu if we haven't already selected difficulty
+        if (this.selectedDifficulty !== null) {
+          console.log("DEBUG: Already selected difficulty, skipping menu");
+          return;
+        }
+
+        // Show difficulty selection menu
+        this.showDifficultyMenuSync()
+          .then((selectedDifficulty) => {
+            this.selectedDifficulty = selectedDifficulty;
+
+            // Switch from demo mode to player mode
+            this.demoSequence = null;
+            this.isInDemoMode = false;
+
+            // Update difficulty reference
+            difficulty = selectedDifficulty;
+
+            // Reset game loop state for fresh start
+            this.resetGameLoopState(gameState, difficulty, gameLoopState);
+
+            // Enable movement input handlers for player mode
+            this.inputHandler.on("move-left", moveLeftHandler);
+            this.inputHandler.on("move-right", moveRightHandler);
+            this.inputHandler.on("move-down", moveDownHandler);
+
+            // Register pause handler now that we're in player mode
+            this.inputHandler.on("pause", () => {
+              // Ignore pause after game over
+              if (!gameState.isActive) return;
+
+              gameState.isPaused = !gameState.isPaused;
+              if (gameState.isPaused) {
+                Terminal.write(
+                  Terminal.colorizeText(
+                    "GAME PAUSED - Press 'space' to resume\n"
+                  )
+                );
+              } else {
+                Terminal.clearPreviousLine();
+                gameLoopState.needsRender = true;
+              }
+            });
+
+            this.clearFooter();
+          })
+          .catch((err) => {
+            console.error("DEBUG: Error in difficulty selection:", err);
+          });
+      });
+    }
 
     // Setup control handlers - pause enabled only in player mode
     if (!this.isInDemoMode) {
