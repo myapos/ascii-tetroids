@@ -141,7 +141,7 @@ This approach provides:
 ### Future Enhancements
 
 - [ ] Score tracking with persistent storage
-- [x] Refactoor and organize code structure
+- [x] Refactor and organize code structure
 - [x] Improved game controls
 - [x] Additional game modes
 - [x] splash screens
