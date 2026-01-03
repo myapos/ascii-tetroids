@@ -1,6 +1,8 @@
-# ASCII Tetris
+# ASCII Tetroids
 
-A TypeScript implementation of Tetris using ASCII art for display.
+A TypeScript implementation of a block-stacking puzzle game inspired by Tetris, featuring ASCII art for display.
+
+> **Note**: This is a fan implementation inspired by the classic Tetris game. Tetris® is a registered trademark of The Tetris Company.
 
 ## Getting Started
 
