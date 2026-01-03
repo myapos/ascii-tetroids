@@ -31,6 +31,7 @@ export class DemoMode implements IGameMode {
   private classicMode!: ClassicMode;
   private wasUserInitiated = false;
   private playListener: ((event: unknown) => void) | null = null;
+  private menuActive = false;
 
   constructor(
     gameLogic: GameLogic,
@@ -95,8 +96,9 @@ export class DemoMode implements IGameMode {
         userPressed = true;
         this.wasUserInitiated = true;
 
-        // Show difficulty menu
+        // Show difficulty menu (clears itself on selection)
         const selectedDifficulty = await this.showDifficultyMenu();
+
         resolve({ userInitiatedPlay: true, selectedDifficulty });
       };
 
@@ -126,45 +128,52 @@ export class DemoMode implements IGameMode {
   }
 
   private async showDifficultyMenu(): Promise<IDifficultyLevel> {
-    Terminal.write(
-      Terminal.colorizeText(
-        "\n\nSELECT DIFFICULTY:\n\n1 - Easy\n2 - Normal (default)\n3 - Hard\n\nSelection will default to Normal in 15 seconds...\n\n"
-      )
+    // Prevent showing menu multiple times
+    if (this.menuActive) {
+      return new NormalDifficulty();
+    }
+    this.menuActive = true;
+
+    const menuText = Terminal.colorizeText(
+      "\n\nSELECT DIFFICULTY:\n\n1 - Easy\n2 - Normal (default)\n3 - Hard\n\nSelection will default to Normal in 15 seconds...\n\n"
     );
+
+    Terminal.write(menuText);
 
     return new Promise((resolve) => {
       let timeoutId: NodeJS.Timeout | null = null;
 
-      const easyHandler = () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        for (let i = 0; i < 12; i++) {
-          Terminal.clearPreviousLine();
-        }
+      const cleanup = () => {
+        this.menuActive = false;
         this.inputHandler.off("difficulty-easy", easyHandler);
         this.inputHandler.off("difficulty-normal", normalHandler);
         this.inputHandler.off("difficulty-hard", hardHandler);
+      };
+
+      const easyHandler = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        console.clear();
+        Terminal.moveCursorHome();
+        Terminal.clearFromCursorToEndOfScreen();
+        cleanup();
         resolve(new EasyDifficulty());
       };
 
       const normalHandler = () => {
         if (timeoutId) clearTimeout(timeoutId);
-        for (let i = 0; i < 12; i++) {
-          Terminal.clearPreviousLine();
-        }
-        this.inputHandler.off("difficulty-easy", easyHandler);
-        this.inputHandler.off("difficulty-normal", normalHandler);
-        this.inputHandler.off("difficulty-hard", hardHandler);
+        console.clear();
+        Terminal.moveCursorHome();
+        Terminal.clearFromCursorToEndOfScreen();
+        cleanup();
         resolve(new NormalDifficulty());
       };
 
       const hardHandler = () => {
         if (timeoutId) clearTimeout(timeoutId);
-        for (let i = 0; i < 12; i++) {
-          Terminal.clearPreviousLine();
-        }
-        this.inputHandler.off("difficulty-easy", easyHandler);
-        this.inputHandler.off("difficulty-normal", normalHandler);
-        this.inputHandler.off("difficulty-hard", hardHandler);
+        console.clear();
+        Terminal.moveCursorHome();
+        Terminal.clearFromCursorToEndOfScreen();
+        cleanup();
         resolve(new HardDifficulty());
       };
 
@@ -173,13 +182,10 @@ export class DemoMode implements IGameMode {
       this.inputHandler.on("difficulty-hard", hardHandler);
 
       timeoutId = setTimeout(() => {
-        for (let i = 0; i < 12; i++) {
-          Terminal.clearPreviousLine();
-        }
-        this.inputHandler.off("difficulty-easy", easyHandler);
-        this.inputHandler.off("difficulty-normal", normalHandler);
-        this.inputHandler.off("difficulty-hard", hardHandler);
-        resolve(new NormalDifficulty());
+        console.clear();
+        Terminal.moveCursorHome();
+        Terminal.clearFromCursorToEndOfScreen();
+        cleanup();
       }, DIFFICULTY_SELECTION_TIMEOUT);
     });
   }
