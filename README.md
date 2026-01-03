@@ -151,7 +151,7 @@ This approach provides:
 - [ ] check if all columns cells has support
   - [ ] if not then move all columns with no support down until they find
 - [x] colors in ascii chars
-- [ ] add auto mode
+- [x] add auto mode
 - [ ] add music
 - [x] instructions for pausing in preview
 - [ ] deb packaging
