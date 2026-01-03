@@ -7,7 +7,7 @@ import square from "src/shapes/square";
 import leftSigma from "src/shapes/leftSigma";
 import rightSigma from "src/shapes/rightSigma";
 import { SIDE_WALL, EMPTY, NUM_OF_COLS } from "src/constants/constants";
-import clone, { cloneMap } from "utils/clone";
+import clone, { cloneMap } from "src/utils/clone";
 
 const padShape = (shape: Shape, targetWidth: number): Shape => {
   return clone(shape).map((row) => {

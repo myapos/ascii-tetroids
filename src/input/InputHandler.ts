@@ -5,7 +5,8 @@ export type InputEventType =
   | "rotate"
   | "pause"
   | "play-again"
-  | "quit";
+  | "quit"
+  | "play";
 
 export interface InputEvent {
   type: InputEventType;
@@ -28,7 +29,7 @@ export class InputHandler {
     this.listeners.get(eventType)?.delete(callback);
   }
 
-  private emit(event: InputEvent) {
+  emit(event: InputEvent) {
     const callbacks = this.listeners.get(event.type);
     if (callbacks) {
       callbacks.forEach((callback) => callback(event));
@@ -36,6 +37,11 @@ export class InputHandler {
   }
 
   start() {
+    // Prevent registering stdin listener multiple times
+    if (this.isListening) {
+      return;
+    }
+
     const isInDebugMode = typeof process.stdin.setRawMode === "undefined";
 
     if (isInDebugMode) {
@@ -57,8 +63,12 @@ export class InputHandler {
         this.emit({ type: "quit", timestamp: Date.now() });
       }
 
-      if (key === "p" || key === "P" || key === " ") {
+      if (key === " ") {
         this.emit({ type: "pause", timestamp: Date.now() });
+      }
+
+      if (key === "p" || key === "P") {
+        this.emit({ type: "play", timestamp: Date.now() });
       }
 
       if (key === "r" || key === "R") {

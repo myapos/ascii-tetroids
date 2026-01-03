@@ -138,8 +138,8 @@ This approach provides:
 - [ ] Score tracking with persistent storage
 - [x] Refactoor and organize code structure
 - [x] Improved game controls
-- [ ] Additional game modes
-- [ ] splash screens
+- [x] Additional game modes
+- [x] splash screens
 - [x] back and forth, retry handling?
 - [ ] database, scores, extra output on preview
 - [x] levels

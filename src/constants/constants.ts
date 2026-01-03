@@ -37,3 +37,8 @@ export const PREVIEW_LABELS = [
 ];
 export const NEXT_WORD = ["N", "E", "X", "T"];
 export const LEVEL_WORD = ["L", "E", "V", "E", "L"];
+
+// Demo mode settings
+export const DEMO_MOVEMENTS = ["<", ">", "rotate", "<", ">", "rotate", "down"];
+export const DEMO_MOVE_INTERVAL = 500; // ms between moves
+export const SPLASH_SCREEN_DELAY = 1000;

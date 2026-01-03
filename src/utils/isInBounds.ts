@@ -1,4 +1,4 @@
-import type { Pos } from "src/types.ts";
+import type { Pos } from "src/types";
 /**
  * Checks if a given position is within the bounds of a 2D grid.
  *

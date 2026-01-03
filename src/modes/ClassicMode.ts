@@ -13,87 +13,195 @@ export class ClassicMode implements IGameMode {
   private gameLogic: GameLogic;
   private renderer: Renderer;
   private inputHandler: InputHandler;
+  private demoSequence: UserMove[] | null = null;
+  private demoMoveIndex = 0;
+  private onRenderCallback: (() => void) | null = null;
+  private rotateListener: ((event: unknown) => void) | null = null;
+  private isInDemoMode = false;
 
   constructor(
     gameLogic: GameLogic,
     renderer: Renderer,
-    inputHandler: InputHandler
+    inputHandler: InputHandler,
+    demoSequence?: UserMove[],
+    onRenderCallback?: () => void
   ) {
     this.gameLogic = gameLogic;
     this.renderer = renderer;
     this.inputHandler = inputHandler;
+    this.demoSequence = demoSequence || null;
+    this.isInDemoMode = demoSequence ? demoSequence.length > 0 : false;
+    this.onRenderCallback = onRenderCallback || null;
+  }
+
+  private resetGameLoopState(
+    gameState: GameState,
+    difficulty: IDifficultyLevel,
+    gameLoopState: {
+      keyQueue: UserMove[];
+      lastGravityTime: number;
+      hasRested: boolean;
+      newShapeIdx: number;
+      gameOverHandled: boolean;
+      needsRender: boolean;
+    }
+  ): void {
+    gameState.reset(
+      this.gameLogic.initializeChamber(),
+      PreviewManager.initializeChamber(),
+      difficulty.getInitialGravitySpeed()
+    );
+
+    // Reset game loop state variables
+    gameLoopState.keyQueue.length = 0;
+    gameLoopState.lastGravityTime = Date.now();
+    gameLoopState.hasRested = false;
+    gameLoopState.newShapeIdx = Math.floor(
+      Math.random() * this.gameLogic.getShapes().size
+    );
+    gameLoopState.gameOverHandled = false;
+    gameLoopState.needsRender = false;
+    this.demoMoveIndex = 0;
+
+    // Initialize preview with the first shape
+    gameState.previewChamber = PreviewManager.addPreviewNextShape(
+      gameLoopState.newShapeIdx,
+      gameState.previewChamber,
+      gameState.level
+    );
+
+    // Set game as active
+    gameState.isActive = true;
+  }
+
+  private clearFooter(): void {
+    Terminal.clearPreviousLine();
+    Terminal.clearPreviousLine();
+    Terminal.clearPreviousLine();
   }
 
   async play(
     gameState: GameState,
     difficulty: IDifficultyLevel
   ): Promise<void> {
-    const keyQueue: UserMove[] = [];
-    const MAX_QUEUE_SIZE = 2000;
+    // Game loop state object - encapsulates all loop variables
+    const gameLoopState = {
+      keyQueue: [] as UserMove[],
+      lastGravityTime: Date.now(),
+      hasRested: false,
+      newShapeIdx: Math.floor(Math.random() * this.gameLogic.getShapes().size),
+      gameOverHandled: false,
+      needsRender: false,
+    };
 
+    const MAX_QUEUE_SIZE = 2000;
     const shapes = this.gameLogic.getShapes();
 
-    let lastGravityTime = Date.now();
-    let hasRested = false;
-    let newShapeIdx = Math.floor(Math.random() * shapes.size);
-    let gameOverHandled = false;
+    // Define movement handlers (for player mode)
+    const moveLeftHandler = () => {
+      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+        gameLoopState.keyQueue.push("<");
+      }
+    };
 
-    // Setup input handlers
-    this.inputHandler.on("move-left", () => {
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push("<");
+    const moveRightHandler = () => {
+      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+        gameLoopState.keyQueue.push(">");
+      }
+    };
+
+    const moveDownHandler = () => {
+      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+        gameLoopState.keyQueue.push("down");
+      }
+    };
+
+    // Register movement handlers only in player mode
+    if (!this.demoSequence?.length) {
+      this.inputHandler.on("move-left", moveLeftHandler);
+      this.inputHandler.on("move-right", moveRightHandler);
+      this.inputHandler.on("move-down", moveDownHandler);
+    }
+
+    // Rotate is always available (player mode and can be used during demo to switch)
+    // Remove old listener if it exists (from previous play() call)
+    if (this.rotateListener) {
+      this.inputHandler.off("rotate", this.rotateListener);
+    }
+
+    this.rotateListener = () => {
+      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+        gameLoopState.keyQueue.push("rotate");
+      }
+    };
+    this.inputHandler.on("rotate", this.rotateListener);
+
+    this.inputHandler.on("play-again", () => {
+      if (!gameState.isActive) {
+        this.resetGameLoopState(gameState, difficulty, gameLoopState);
       }
     });
 
-    this.inputHandler.on("move-right", () => {
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push(">");
-      }
-    });
+    // Setup play listener for demo mode
+    if (this.demoSequence) {
+      this.inputHandler.on("play", () => {
+        // Ignore play if game is already active
+        if (gameState.isActive && !this.isInDemoMode) return;
 
-    this.inputHandler.on("move-down", () => {
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push("down");
-      }
-    });
+        // Switch from demo mode to player mode
+        this.demoSequence = null;
+        this.isInDemoMode = false;
 
-    this.inputHandler.on("rotate", () => {
-      if (keyQueue.length < MAX_QUEUE_SIZE) {
-        keyQueue.push("rotate");
-      }
-    });
+        // Reset game loop state for fresh start
+        this.resetGameLoopState(gameState, difficulty, gameLoopState);
 
-    this.inputHandler.on("pause", () => {
-      gameState.isPaused = !gameState.isPaused;
-      if (gameState.isPaused) {
-        Terminal.write(
-          Terminal.colorizeText(
-            "\nGAME PAUSED - Press 'p' or space to resume\n"
-          )
-        );
-      } else {
-        Terminal.clearPreviousLine();
-        Terminal.clearPreviousLine();
-      }
-    });
+        // Enable movement input handlers for player mode
+        this.inputHandler.on("move-left", moveLeftHandler);
+        this.inputHandler.on("move-right", moveRightHandler);
+        this.inputHandler.on("move-down", moveDownHandler);
+
+        // Register pause handler now that we're in player mode
+        this.inputHandler.on("pause", () => {
+          // Ignore pause after game over
+          if (!gameState.isActive) return;
+
+          gameState.isPaused = !gameState.isPaused;
+          if (gameState.isPaused) {
+            Terminal.write(
+              Terminal.colorizeText("GAME PAUSED - Press 'space' to resume\n")
+            );
+          } else {
+            Terminal.clearPreviousLine();
+            gameLoopState.needsRender = true;
+          }
+        });
+
+        this.clearFooter();
+      });
+    }
+
+    // Setup control handlers - pause enabled only in player mode
+    if (!this.isInDemoMode) {
+      this.inputHandler.on("pause", () => {
+        // Ignore pause after game over
+        if (!gameState.isActive) return;
+
+        gameState.isPaused = !gameState.isPaused;
+        if (gameState.isPaused) {
+          Terminal.write(
+            Terminal.colorizeText("GAME PAUSED - Press 'space' to resume\n")
+          );
+        } else {
+          Terminal.clearPreviousLine();
+          gameLoopState.needsRender = true;
+        }
+      });
+    }
 
     this.inputHandler.on("quit", () => {
       gameState.isActive = false;
       this.renderer.exitGame();
       process.exit(0);
-    });
-
-    this.inputHandler.on("play-again", () => {
-      if (!gameState.isActive) {
-        Terminal.clearPreviousLine(); // Clear the newline after message
-        Terminal.clearPreviousLine(); // Clear the game over message
-        gameState.reset(
-          this.gameLogic.initializeChamber(),
-          PreviewManager.initializeChamber(),
-          difficulty.getInitialGravitySpeed()
-        );
-        gameOverHandled = false;
-      }
     });
 
     // Start input handler AFTER all listeners are registered
@@ -103,24 +211,34 @@ export class ClassicMode implements IGameMode {
 
     // Initialize preview with the first shape
     gameState.previewChamber = PreviewManager.addPreviewNextShape(
-      newShapeIdx,
+      gameLoopState.newShapeIdx,
       gameState.previewChamber,
       gameState.level
     );
 
     // Main game loop
     while (true) {
-      if (!gameState.isActive && !gameOverHandled) {
-        gameOverHandled = true;
+      if (!gameState.isActive && !gameLoopState.gameOverHandled) {
+        gameLoopState.gameOverHandled = true;
+
+        // In demo mode, auto-restart
+        if (this.demoSequence) {
+          this.resetGameLoopState(gameState, difficulty, gameLoopState);
+          continue;
+        }
+
         Terminal.write(
           Terminal.colorizeText(
             "\nYOU LOST!! Press 'r' to play again or 'q' to exit\n"
           )
         );
-        // Wait for user input (play-again or quit)
-        while (gameState.isActive === false) {
+        // Wait for user input (play-again or quit) - skip all game logic
+        while (!gameState.isActive) {
           await Terminal.sleep(100);
         }
+        // Clear the message when user chooses to play again
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
         continue;
       }
 
@@ -129,9 +247,21 @@ export class ClassicMode implements IGameMode {
         continue;
       }
 
+      // In demo mode, inject moves from sequence
+      if (this.demoSequence) {
+        const move =
+          this.demoSequence[this.demoMoveIndex % this.demoSequence.length];
+        if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+          gameLoopState.keyQueue.push(move);
+        }
+        this.demoMoveIndex++;
+        // Slow down demo moves to be visible
+        await Terminal.sleep(650);
+      }
+
       // Process all queued input
-      while (keyQueue.length > 0) {
-        const move = keyQueue.shift()!;
+      while (gameLoopState.keyQueue.length > 0) {
+        const move = gameLoopState.keyQueue.shift()!;
 
         if (move === "rotate") {
           gameState.chamber = this.gameLogic.rotateShape(gameState.chamber);
@@ -147,8 +277,8 @@ export class ClassicMode implements IGameMode {
 
       // Apply gravity
       const now = Date.now();
-      if (now - lastGravityTime > gameState.gravitySpeed) {
-        lastGravityTime = now;
+      if (now - gameLoopState.lastGravityTime > gameState.gravitySpeed) {
+        gameLoopState.lastGravityTime = now;
 
         const shapeCoordsBefore = this.gameLogic.getShapeCoords(
           gameState.chamber
@@ -170,13 +300,13 @@ export class ClassicMode implements IGameMode {
           );
 
           // Add new shape
-          const shape = shapes.get(newShapeIdx)!;
+          const shape = shapes.get(gameLoopState.newShapeIdx)!;
           gameState.chamber.splice(0, shape.length);
           gameState.chamber.unshift(...shape);
 
-          lastGravityTime = Date.now(); // Reset gravity timer for new shape
+          gameLoopState.lastGravityTime = Date.now(); // Reset gravity timer for new shape
 
-          keyQueue.length = 0;
+          gameLoopState.keyQueue.length = 0;
           const { numOfFilledRows, chamber: newChamb } =
             this.gameLogic.checkFilledRows(gameState.chamber, NUM_OF_COLS);
           gameState.chamber = newChamb;
@@ -195,10 +325,10 @@ export class ClassicMode implements IGameMode {
             gameState.level++;
           }
 
-          hasRested = true;
+          gameLoopState.hasRested = true;
           const lost = this.gameLogic.checkIfPlayerLost(
             gameState.chamber,
-            shapes.get(newShapeIdx)!.length,
+            shapes.get(gameLoopState.newShapeIdx)!.length,
             MAX_CHAMBER_HEIGHT
           );
 
@@ -207,26 +337,34 @@ export class ClassicMode implements IGameMode {
             continue;
           }
 
-          newShapeIdx = Math.floor(Math.random() * shapes.size);
+          gameLoopState.newShapeIdx = Math.floor(Math.random() * shapes.size);
         }
       }
 
       // Update preview chamber with next shape only when shape has rested
-      if (hasRested) {
+      if (gameLoopState.hasRested) {
         gameState.previewChamber = PreviewManager.addPreviewNextShape(
-          newShapeIdx,
+          gameLoopState.newShapeIdx,
           gameState.previewChamber,
           gameState.level
         );
-        newShapeIdx = Math.floor(Math.random() * shapes.size);
-        hasRested = false;
+        gameLoopState.newShapeIdx = Math.floor(Math.random() * shapes.size);
+        gameLoopState.hasRested = false;
       }
 
-      // Render once per frame
-      await this.renderer.renderFrame(
-        gameState.chamber,
-        gameState.previewChamber
-      );
+      // Render once per frame (or when forced, e.g., after unpausing)
+      if (gameLoopState.needsRender || !gameState.isPaused) {
+        await this.renderer.renderFrame(
+          gameState.chamber,
+          gameState.previewChamber
+        );
+        gameLoopState.needsRender = false;
+      }
+
+      // Call render callback only if still in demo mode
+      if (this.onRenderCallback && this.demoSequence) {
+        this.onRenderCallback();
+      }
     }
   }
 }
