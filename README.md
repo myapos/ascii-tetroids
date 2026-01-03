@@ -181,8 +181,7 @@ This approach provides:
 ### Future Enhancements
 
 - [x] Score tracking
-  - [ ] with persistent storage
-- [ ] select difficulty
+- [x] select difficulty
 - [x] Refactor and organize code structure
 - [x] Improved game controls
 - [x] Additional game modes
