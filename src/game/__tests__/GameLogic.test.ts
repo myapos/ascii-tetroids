@@ -276,7 +276,7 @@ describe("GameLogic", () => {
       expect(gameLogic.arraysAreEqual(arr1, arr3)).toBe(false);
     });
 
-    it("getShapes returns all 7 tetromino shapes", () => {
+    it("getShapes returns all 7 block shapes", () => {
       const shapes = gameLogic.getShapes();
       expect(shapes.size).toBe(7);
     });

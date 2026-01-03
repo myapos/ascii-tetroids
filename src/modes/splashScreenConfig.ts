@@ -123,7 +123,7 @@ export const splashScreenLines = [
   {
     type: "content",
     leading: 0,
-    text: chalk.cyan("https://github.com/myapos/ascii-tetris"),
+    text: chalk.cyan("https://github.com/myapos/ascii-tetroids"),
   },
   { type: "empty" },
   { type: "bottom" },
