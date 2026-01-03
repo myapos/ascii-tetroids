@@ -1,5 +1,10 @@
 import type { GameState } from "src/domain/GameState";
 import type { IDifficultyLevel } from "src/difficulty/DifficultyLevel";
+import {
+  EasyDifficulty,
+  NormalDifficulty,
+  HardDifficulty,
+} from "src/difficulty/DifficultyLevel";
 import { GameLogic } from "src/game/GameLogic";
 import { Renderer } from "src/rendering/Renderer";
 import { InputHandler } from "src/input/InputHandler";
@@ -111,6 +116,84 @@ export class ClassicMode implements IGameMode {
     this.soundManager.play("gameLoss");
   }
 
+  private async showDifficultyMenu(): Promise<IDifficultyLevel> {
+    Terminal.write(
+      Terminal.colorizeText(
+        "\n\nSELECT DIFFICULTY:\n\n1 - Easy\n2 - Normal (default)\n3 - Hard\n\nSelection will default to Normal in 15 seconds...\n\n"
+      )
+    );
+
+    return new Promise((resolve) => {
+      let timeoutId: NodeJS.Timeout | null = null;
+
+      // Handle difficulty selection
+      const easyHandler = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        this.inputHandler.off("difficulty-easy", easyHandler);
+        this.inputHandler.off("difficulty-normal", normalHandler);
+        this.inputHandler.off("difficulty-hard", hardHandler);
+        resolve(new EasyDifficulty());
+      };
+
+      const normalHandler = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        this.inputHandler.off("difficulty-easy", easyHandler);
+        this.inputHandler.off("difficulty-normal", normalHandler);
+        this.inputHandler.off("difficulty-hard", hardHandler);
+        resolve(new NormalDifficulty());
+      };
+
+      const hardHandler = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        this.inputHandler.off("difficulty-easy", easyHandler);
+        this.inputHandler.off("difficulty-normal", normalHandler);
+        this.inputHandler.off("difficulty-hard", hardHandler);
+        resolve(new HardDifficulty());
+      };
+
+      // Register handlers
+      this.inputHandler.on("difficulty-easy", easyHandler);
+      this.inputHandler.on("difficulty-normal", normalHandler);
+      this.inputHandler.on("difficulty-hard", hardHandler);
+
+      // Set 15-second timeout to default to Normal
+      timeoutId = setTimeout(() => {
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        Terminal.clearPreviousLine();
+        this.inputHandler.off("difficulty-easy", easyHandler);
+        this.inputHandler.off("difficulty-normal", normalHandler);
+        this.inputHandler.off("difficulty-hard", hardHandler);
+        resolve(new NormalDifficulty());
+      }, 15000);
+    });
+  }
+
   async play(
     gameState: GameState,
     difficulty: IDifficultyLevel
@@ -192,13 +275,19 @@ export class ClassicMode implements IGameMode {
 
     // Setup play listener for demo mode
     if (this.demoSequence) {
-      this.inputHandler.on("play", () => {
+      this.inputHandler.on("play", async () => {
         // Ignore play if game is already active
         if (gameState.isActive && !this.isInDemoMode) return;
+
+        // Show difficulty selection menu
+        const selectedDifficulty = await this.showDifficultyMenu();
 
         // Switch from demo mode to player mode
         this.demoSequence = null;
         this.isInDemoMode = false;
+
+        // Update difficulty reference
+        difficulty = selectedDifficulty;
 
         // Reset game loop state for fresh start
         this.resetGameLoopState(gameState, difficulty, gameLoopState);

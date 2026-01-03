@@ -8,7 +8,10 @@ export type InputEventType =
   | "quit"
   | "play"
   | "volume-up"
-  | "volume-down";
+  | "volume-down"
+  | "difficulty-easy"
+  | "difficulty-normal"
+  | "difficulty-hard";
 
 export interface InputEvent {
   type: InputEventType;
@@ -90,6 +93,13 @@ export class InputHandler {
         this.emit({ type: "volume-up", timestamp: Date.now() });
       } else if (key === "-" || key === "_") {
         this.emit({ type: "volume-down", timestamp: Date.now() });
+      }
+      if (key === "1") {
+        this.emit({ type: "difficulty-easy", timestamp: Date.now() });
+      } else if (key === "2") {
+        this.emit({ type: "difficulty-normal", timestamp: Date.now() });
+      } else if (key === "3") {
+        this.emit({ type: "difficulty-hard", timestamp: Date.now() });
       }
     });
 
