@@ -1,7 +1,8 @@
 {
-  "name": "ascii-tetris",
+  "name": "ascii-tetroids",
   "module": "index-new.ts",
   "type": "module",
+  "license": "MIT",
   "scripts": {
     "dev": "tsx index-new.ts",
     "dev:old": "tsx index.ts",

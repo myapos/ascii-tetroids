@@ -4,7 +4,7 @@ import { SIDE_WALL, EMPTY, NUM_OF_COLS, LIVE } from "../../constants/constants";
 
 describe("Shape Creation", () => {
   describe("getShapes - raw unpadded shapes", () => {
-    it("returns 7 tetromino shapes", () => {
+    it("returns 7 block shapes", () => {
       const shapes = getShapes();
       expect(shapes.size).toBe(7);
     });

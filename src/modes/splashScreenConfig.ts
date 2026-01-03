@@ -1,13 +1,86 @@
 import chalk from "chalk";
 
 export const splashScreenConfig = {
-  contentWidth: 39,
+  contentWidth: 45,
   padding: "    ",
 };
 
 export const splashScreenLines = [
   { type: "top" },
   { type: "empty" },
+  // ascii
+  {
+    type: "content",
+    leading: 0,
+    text:
+      chalk.cyan(" ### ") +
+      "  " +
+      chalk.gray("###") +
+      "   " +
+      chalk.green("###") +
+      "    " +
+      chalk.magenta("#") +
+      "    " +
+      chalk.red("#"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text:
+      chalk.cyan("#   #") +
+      "  " +
+      chalk.gray("#") +
+      "    " +
+      chalk.green("#   #") +
+      "   " +
+      chalk.magenta("#") +
+      "    " +
+      chalk.red("#"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text:
+      chalk.cyan("#####") +
+      "  " +
+      chalk.gray("##") +
+      "   " +
+      chalk.green("#") +
+      "       " +
+      chalk.magenta("#") +
+      "    " +
+      chalk.red("#"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text:
+      chalk.cyan("#   #") +
+      "  " +
+      chalk.gray("  #") +
+      "  " +
+      chalk.green("#   #") +
+      "   " +
+      chalk.magenta("#") +
+      "    " +
+      chalk.red("#"),
+  },
+  {
+    type: "content",
+    leading: 0,
+    text:
+      chalk.cyan("#   #") +
+      "  " +
+      chalk.gray("###") +
+      "   " +
+      chalk.green("###") +
+      "    " +
+      chalk.magenta("#") +
+      "    " +
+      chalk.red("#"),
+  },
+  { type: "empty" },
+  // tetroids
   {
     type: "content",
     leading: 0,
@@ -19,10 +92,14 @@ export const splashScreenLines = [
       chalk.green("###") +
       "  " +
       chalk.magenta("###") +
-      "   " +
-      chalk.red("#") +
       "  " +
-      chalk.blue(" ##"),
+      chalk.red("###") +
+      "  " +
+      chalk.blue("#") +
+      "  " +
+      chalk.white("###") +
+      "  " +
+      chalk.gray("###"),
   },
   {
     type: "content",
@@ -36,9 +113,13 @@ export const splashScreenLines = [
       "   " +
       chalk.magenta("# #") +
       "  " +
-      chalk.red(" #") +
+      chalk.red("# #") +
       "  " +
-      chalk.blue("#"),
+      chalk.blue("#") +
+      "  " +
+      chalk.white("# #") +
+      "  " +
+      chalk.gray("#"),
   },
   {
     type: "content",
@@ -46,15 +127,19 @@ export const splashScreenLines = [
     text:
       chalk.cyan(" #") +
       "   " +
-      chalk.yellow("##") +
-      "    " +
+      chalk.yellow("###") +
+      "   " +
       chalk.green(" #") +
       "   " +
       chalk.magenta("##") +
       "   " +
-      chalk.red(" #") +
-      "   " +
-      chalk.blue("##"),
+      chalk.red("# #") +
+      "  " +
+      chalk.blue("#") +
+      "  " +
+      chalk.white("# #") +
+      "  " +
+      chalk.gray("##"),
   },
   {
     type: "content",
@@ -68,9 +153,13 @@ export const splashScreenLines = [
       "   " +
       chalk.magenta("# #") +
       "  " +
-      chalk.red(" #") +
+      chalk.red("# #") +
+      "  " +
+      chalk.blue("#") +
+      "  " +
+      chalk.white("# #") +
       "   " +
-      chalk.blue("  #"),
+      chalk.gray(" #"),
   },
   {
     type: "content",
@@ -79,15 +168,20 @@ export const splashScreenLines = [
       chalk.cyan(" #") +
       "   " +
       chalk.yellow("####") +
-      "   " +
-      chalk.green("#") +
+      "  " +
+      chalk.green(" #") +
       "   " +
       chalk.magenta("#  #") +
+      " " +
+      chalk.red("###") +
       "  " +
-      chalk.red("#") +
+      chalk.blue("#") +
       "  " +
-      chalk.blue("##"),
+      chalk.white("###") +
+      "  " +
+      chalk.gray("###"),
   },
+
   { type: "empty" },
   { type: "divider" },
   { type: "empty" },
@@ -112,18 +206,13 @@ export const splashScreenLines = [
   {
     type: "content",
     leading: 0,
-    text: chalk.gray("Original: Alexey Pajitnov (1984)"),
-  },
-  {
-    type: "content",
-    leading: 0,
-    text: chalk.gray("Author: ") + chalk.grey("Myron Apostolakis (2026)"),
+    text: chalk.gray("Author: ") + chalk.gray("Myron Apostolakis (2026)"),
   },
   { type: "empty" },
   {
     type: "content",
     leading: 0,
-    text: chalk.cyan("https://github.com/myapos/ascii-tetris"),
+    text: chalk.cyan("https://github.com/myapos/ascii-tetroids"),
   },
   { type: "empty" },
   { type: "bottom" },

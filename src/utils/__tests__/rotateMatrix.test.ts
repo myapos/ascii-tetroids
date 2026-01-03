@@ -75,7 +75,7 @@ describe("rotateMatrix", () => {
     ]);
   });
 
-  it("rotates an L-shaped tetromino", () => {
+  it("rotates an L-shaped block", () => {
     const result = rotateMatrix(L);
     expect(result).toEqual([
       [".", ".", "."],
