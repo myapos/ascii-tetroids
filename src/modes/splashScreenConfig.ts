@@ -5,10 +5,7 @@ export const splashScreenConfig = {
   padding: "    ",
 };
 
-export const splashScreenLines = [
-  { type: "top" },
-  { type: "empty" },
-  // ascii
+const ASCII = [
   {
     type: "content",
     leading: 0,
@@ -79,8 +76,9 @@ export const splashScreenLines = [
       "    " +
       chalk.red("#"),
   },
-  { type: "empty" },
-  // tetroids
+];
+
+const TETROIDS = [
   {
     type: "content",
     leading: 0,
@@ -97,7 +95,7 @@ export const splashScreenLines = [
       "  " +
       chalk.blue("#") +
       "  " +
-      chalk.white("###") +
+      chalk.yellow("###") +
       "  " +
       chalk.gray("###"),
   },
@@ -117,8 +115,8 @@ export const splashScreenLines = [
       "  " +
       chalk.blue("#") +
       "  " +
-      chalk.white("# #") +
-      "  " +
+      chalk.yellow("#  #") +
+      " " +
       chalk.gray("#"),
   },
   {
@@ -137,8 +135,8 @@ export const splashScreenLines = [
       "  " +
       chalk.blue("#") +
       "  " +
-      chalk.white("# #") +
-      "  " +
+      chalk.yellow("#  #") +
+      " " +
       chalk.gray("##"),
   },
   {
@@ -157,8 +155,8 @@ export const splashScreenLines = [
       "  " +
       chalk.blue("#") +
       "  " +
-      chalk.white("# #") +
-      "   " +
+      chalk.yellow("#  #") +
+      "  " +
       chalk.gray(" #"),
   },
   {
@@ -177,10 +175,18 @@ export const splashScreenLines = [
       "  " +
       chalk.blue("#") +
       "  " +
-      chalk.white("###") +
+      chalk.yellow("###") +
       "  " +
       chalk.gray("###"),
   },
+];
+
+export const splashScreenLines = [
+  { type: "top" },
+  { type: "empty" },
+  ...ASCII,
+  { type: "empty" },
+  ...TETROIDS,
 
   { type: "empty" },
   { type: "divider" },
