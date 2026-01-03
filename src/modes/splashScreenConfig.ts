@@ -204,7 +204,8 @@ export const splashScreenLines = [
   {
     type: "content",
     leading: 0,
-    text: chalk.cyan("Space:") + chalk.gray(" Pause  |  Q: Quit"),
+    text:
+      chalk.cyan("+/-:") + chalk.gray(" Volume  |  Space: Pause  |  Q: Quit"),
   },
   { type: "empty" },
   { type: "divider" },

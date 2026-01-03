@@ -6,7 +6,9 @@ export type InputEventType =
   | "pause"
   | "play-again"
   | "quit"
-  | "play";
+  | "play"
+  | "volume-up"
+  | "volume-down";
 
 export interface InputEvent {
   type: InputEventType;
@@ -83,6 +85,11 @@ export class InputHandler {
         this.emit({ type: "move-down", timestamp: Date.now() });
       } else if (key === "\u001b[A") {
         this.emit({ type: "rotate", timestamp: Date.now() });
+      }
+      if (key === "+" || key === "=") {
+        this.emit({ type: "volume-up", timestamp: Date.now() });
+      } else if (key === "-" || key === "_") {
+        this.emit({ type: "volume-down", timestamp: Date.now() });
       }
     });
 

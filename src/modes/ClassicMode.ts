@@ -1,4 +1,3 @@
-import type { IGameMode } from "./IGameMode";
 import type { GameState } from "src/domain/GameState";
 import type { IDifficultyLevel } from "src/difficulty/DifficultyLevel";
 import { GameLogic } from "src/game/GameLogic";
@@ -8,7 +7,8 @@ import { Terminal } from "src/rendering/Terminal";
 import { PreviewManager } from "src/game/PreviewManager";
 import { MAX_CHAMBER_HEIGHT, NUM_OF_COLS } from "src/constants/constants";
 import { UserMove } from "src/types";
-
+import type { IGameMode } from "src/modes/IGameMode";
+import { SoundManager } from "src/audio/SoundManager";
 export class ClassicMode implements IGameMode {
   private gameLogic: GameLogic;
   private renderer: Renderer;
@@ -18,6 +18,7 @@ export class ClassicMode implements IGameMode {
   private onRenderCallback: (() => void) | null = null;
   private rotateListener: ((event: unknown) => void) | null = null;
   private isInDemoMode = false;
+  private soundManager: SoundManager;
 
   constructor(
     gameLogic: GameLogic,
@@ -32,6 +33,11 @@ export class ClassicMode implements IGameMode {
     this.demoSequence = demoSequence || null;
     this.isInDemoMode = demoSequence ? demoSequence.length > 0 : false;
     this.onRenderCallback = onRenderCallback || null;
+    this.soundManager = new SoundManager();
+  }
+
+  private getNewShapeIdx() {
+    return Math.floor(Math.random() * this.gameLogic.getShapes().size);
   }
 
   private resetGameLoopState(
@@ -56,9 +62,7 @@ export class ClassicMode implements IGameMode {
     gameLoopState.keyQueue.length = 0;
     gameLoopState.lastGravityTime = Date.now();
     gameLoopState.hasRested = false;
-    gameLoopState.newShapeIdx = Math.floor(
-      Math.random() * this.gameLogic.getShapes().size
-    );
+    gameLoopState.newShapeIdx = this.getNewShapeIdx();
     gameLoopState.gameOverHandled = false;
     gameLoopState.needsRender = false;
     this.demoMoveIndex = 0;
@@ -80,6 +84,26 @@ export class ClassicMode implements IGameMode {
     Terminal.clearPreviousLine();
   }
 
+  private increaseVolume(): void {
+    this.soundManager.increaseVolume();
+  }
+
+  private decreaseVolume(): void {
+    this.soundManager.decreaseVolume();
+  }
+
+  private beep() {
+    this.soundManager.play("move");
+  }
+
+  private playLineComplete() {
+    this.soundManager.play("lineComplete");
+  }
+
+  private playGameLoss() {
+    this.soundManager.play("gameLoss");
+  }
+
   async play(
     gameState: GameState,
     difficulty: IDifficultyLevel
@@ -89,7 +113,7 @@ export class ClassicMode implements IGameMode {
       keyQueue: [] as UserMove[],
       lastGravityTime: Date.now(),
       hasRested: false,
-      newShapeIdx: Math.floor(Math.random() * this.gameLogic.getShapes().size),
+      newShapeIdx: this.getNewShapeIdx(),
       gameOverHandled: false,
       needsRender: false,
     };
@@ -99,20 +123,32 @@ export class ClassicMode implements IGameMode {
 
     // Define movement handlers (for player mode)
     const moveLeftHandler = () => {
-      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+      if (
+        gameState.isActive &&
+        gameLoopState.keyQueue.length < MAX_QUEUE_SIZE
+      ) {
         gameLoopState.keyQueue.push("<");
+        this.beep();
       }
     };
 
     const moveRightHandler = () => {
-      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+      if (
+        gameState.isActive &&
+        gameLoopState.keyQueue.length < MAX_QUEUE_SIZE
+      ) {
         gameLoopState.keyQueue.push(">");
+        this.beep();
       }
     };
 
     const moveDownHandler = () => {
-      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+      if (
+        gameState.isActive &&
+        gameLoopState.keyQueue.length < MAX_QUEUE_SIZE
+      ) {
         gameLoopState.keyQueue.push("down");
+        this.beep();
       }
     };
 
@@ -130,8 +166,13 @@ export class ClassicMode implements IGameMode {
     }
 
     this.rotateListener = () => {
-      if (gameLoopState.keyQueue.length < MAX_QUEUE_SIZE) {
+      if (
+        gameState.isActive &&
+        gameLoopState.keyQueue.length < MAX_QUEUE_SIZE &&
+        !this.isInDemoMode
+      ) {
         gameLoopState.keyQueue.push("rotate");
+        this.beep();
       }
     };
     this.inputHandler.on("rotate", this.rotateListener);
@@ -202,6 +243,14 @@ export class ClassicMode implements IGameMode {
       gameState.isActive = false;
       this.renderer.exitGame();
       process.exit(0);
+    });
+
+    this.inputHandler.on("volume-up", () => {
+      this.increaseVolume();
+    });
+
+    this.inputHandler.on("volume-down", () => {
+      this.decreaseVolume();
     });
 
     // Start input handler AFTER all listeners are registered
@@ -312,6 +361,10 @@ export class ClassicMode implements IGameMode {
           gameState.chamber = newChamb;
           gameState.totalFilledRows += numOfFilledRows;
 
+          if (numOfFilledRows) {
+            this.playLineComplete();
+          }
+
           const shouldIncreaseGravityLevel =
             gameState.totalFilledRows >= difficulty.getLevelLinesRequired();
 
@@ -333,11 +386,12 @@ export class ClassicMode implements IGameMode {
           );
 
           if (lost) {
+            this.playGameLoss();
             gameState.isActive = false;
             continue;
           }
 
-          gameLoopState.newShapeIdx = Math.floor(Math.random() * shapes.size);
+          gameLoopState.newShapeIdx = this.getNewShapeIdx();
         }
       }
 
