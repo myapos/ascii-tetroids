@@ -23,6 +23,7 @@ npm run dev
 - **Build**: esbuild (production), tsx (development)
 - **Testing**: Vitest
 - **Linting**: ESLint v9
+- **Audio**: Cross-platform sound system (paplay on Linux, afplay on macOS, PowerShell on Windows)
 
 ## Scripts
 
@@ -64,9 +65,44 @@ Use the keyboard controls to move and rotate pieces:
 | **↓ Down Arrow**  | Speed up gravity (drop faster) |
 | **P or Space**    | Pause/Resume game              |
 | **R**             | Play again (after game over)   |
+| **+**             | Increase volume                |
+| **-**             | Decrease volume                |
 | **Q**             | Quit game gracefully           |
 
 Complete rows to clear them and increase your score. The game ends when pieces stack to the top of the board.
+
+## Audio System
+
+The game features a complete cross-platform audio system with sound effects and background music.
+
+### Audio Features
+
+- **Sound Effects**: Debounced sound triggers for game events
+
+  - Move/Rotate: 400Hz beep (150ms)
+  - Line Complete: 500Hz beep (300ms)
+  - Game Loss: 420Hz beep (400ms)
+  - Block Rest: 300Hz thud (200ms)
+
+- **Background Music**: 12-second looping relaxing chiptune melody
+  - Seamless looping without interruption
+  - Volume control with +/- keys
+  - Singleton pattern for single instance
+
+### Platform Support
+
+| Platform | Audio Library       | Volume Control               |
+| -------- | ------------------- | ---------------------------- |
+| Linux    | paplay (PulseAudio) | Seamless via `pactl`         |
+| macOS    | afplay (CoreAudio)  | Brief interruption on change |
+| Windows  | PowerShell          | Brief interruption on change |
+
+### Implementation
+
+- All sounds are **programmatically generated** (no external dependencies)
+- Uses `process.spawn()` for cross-platform audio playback
+- Automatic process cleanup on game exit (signal handlers)
+- Dev/prod path resolution works in both `npm run dev` and `npm run build` modes
 
 ## Terminal Rendering Approach
 
@@ -139,6 +175,8 @@ This approach provides:
 - [x] Added floor and side edges
 - [x] Integrated chalk for colored output
 - [x] Migrated from Bun to npm (esbuild, vitest, tsx)
+- [x] Game sounds and background music
+- [x] Cross-platform audio system
 
 ### Future Enhancements
 

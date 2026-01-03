@@ -9,6 +9,8 @@ import { MAX_CHAMBER_HEIGHT, NUM_OF_COLS } from "src/constants/constants";
 import { UserMove } from "src/types";
 import type { IGameMode } from "src/modes/IGameMode";
 import { SoundManager } from "src/audio/SoundManager";
+import { BackgroundMusic } from "src/audio/BackgroundMusic";
+
 export class ClassicMode implements IGameMode {
   private gameLogic: GameLogic;
   private renderer: Renderer;
@@ -19,6 +21,7 @@ export class ClassicMode implements IGameMode {
   private rotateListener: ((event: unknown) => void) | null = null;
   private isInDemoMode = false;
   private soundManager: SoundManager;
+  private backgroundMusic: BackgroundMusic;
 
   constructor(
     gameLogic: GameLogic,
@@ -34,6 +37,7 @@ export class ClassicMode implements IGameMode {
     this.isInDemoMode = demoSequence ? demoSequence.length > 0 : false;
     this.onRenderCallback = onRenderCallback || null;
     this.soundManager = new SoundManager();
+    this.backgroundMusic = BackgroundMusic.getInstance();
   }
 
   private getNewShapeIdx() {
@@ -86,10 +90,12 @@ export class ClassicMode implements IGameMode {
 
   private increaseVolume(): void {
     this.soundManager.increaseVolume();
+    this.backgroundMusic.increaseVolume();
   }
 
   private decreaseVolume(): void {
     this.soundManager.decreaseVolume();
+    this.backgroundMusic.decreaseVolume();
   }
 
   private beep() {
@@ -241,6 +247,7 @@ export class ClassicMode implements IGameMode {
 
     this.inputHandler.on("quit", () => {
       gameState.isActive = false;
+      this.backgroundMusic.stop();
       this.renderer.exitGame();
       process.exit(0);
     });
@@ -257,6 +264,9 @@ export class ClassicMode implements IGameMode {
     this.inputHandler.start();
 
     this.renderer.enterGame();
+
+    // Start background music
+    this.backgroundMusic.play();
 
     // Initialize preview with the first shape
     gameState.previewChamber = PreviewManager.addPreviewNextShape(
@@ -347,6 +357,11 @@ export class ClassicMode implements IGameMode {
             gameState.chamber,
             shapeCoordsAfter
           );
+
+          // Play block rest sound
+          if (gameState.isActive && !this.isInDemoMode) {
+            this.soundManager.play("blockRest");
+          }
 
           // Add new shape
           const shape = shapes.get(gameLoopState.newShapeIdx)!;

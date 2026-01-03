@@ -1,12 +1,18 @@
 import { spawn } from "child_process";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { resolve } from "path";
+import { existsSync } from "fs";
 import { debounce } from "../utils/debounce.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// When bundled, resolve paths relative to where node is being run from
+// In dev mode (tsx), files are in src/audio/sounds
+// In prod mode (node dist/), files are in dist/sounds
+function getSoundPath(filename: string): string {
+  const prodPath = resolve(process.cwd(), "dist/sounds", filename);
+  const devPath = resolve(process.cwd(), "src/audio/sounds", filename);
+  return existsSync(prodPath) ? prodPath : devPath;
+}
 
-export type SoundType = "move" | "lineComplete" | "gameLoss";
+export type SoundType = "move" | "lineComplete" | "gameLoss" | "blockRest";
 
 interface SoundConfig {
   path: string;
@@ -15,16 +21,20 @@ interface SoundConfig {
 
 const SOUND_LIBRARY: Record<SoundType, SoundConfig> = {
   move: {
-    path: join(__dirname, "sounds", "move.wav"),
+    path: getSoundPath("move.wav"),
     defaultVolume: 0.5,
   },
   lineComplete: {
-    path: join(__dirname, "sounds", "line-complete.wav"),
+    path: getSoundPath("line-complete.wav"),
     defaultVolume: 0.7,
   },
   gameLoss: {
-    path: join(__dirname, "sounds", "game-loss.wav"),
+    path: getSoundPath("game-loss.wav"),
     defaultVolume: 0.8,
+  },
+  blockRest: {
+    path: getSoundPath("block-rest.wav"),
+    defaultVolume: 0.6,
   },
 };
 
@@ -36,6 +46,7 @@ export class SoundManager {
     100
   );
   private playGameLoss = debounce(() => this.playSound("gameLoss"), 100);
+  private playBlockRest = debounce(() => this.playSound("blockRest"), 50);
 
   setVolume(volume: number): void {
     this.volume = Math.max(0.0, Math.min(1.0, volume));
@@ -64,13 +75,15 @@ export class SoundManager {
       case "gameLoss":
         this.playGameLoss();
         break;
+      case "blockRest":
+        this.playBlockRest();
+        break;
     }
   }
 
   private playSound(soundType: SoundType): void {
     const config = SOUND_LIBRARY[soundType];
     if (!config) {
-      console.error(`Unknown sound type: ${soundType}`);
       return;
     }
 
