@@ -1,6 +1,7 @@
 import { spawn, ChildProcess, execSync } from "child_process";
 import { resolve } from "path";
 import { existsSync } from "fs";
+import { AUDIO_VOLUME_UPDATE_DELAY } from "../constants/constants.js";
 
 // When bundled, resolve paths relative to where node is being run from
 // In dev mode (tsx), files are in src/audio/sounds
@@ -198,7 +199,7 @@ export class BackgroundMusic {
         // Restart the music
         setTimeout(() => {
           this.spawnPaplayLoop();
-        }, 100);
+        }, AUDIO_VOLUME_UPDATE_DELAY);
       }
     });
 
@@ -207,7 +208,7 @@ export class BackgroundMusic {
         // Restart if there was an error
         setTimeout(() => {
           this.spawnPaplayLoop();
-        }, 100);
+        }, AUDIO_VOLUME_UPDATE_DELAY);
       }
     });
   }
