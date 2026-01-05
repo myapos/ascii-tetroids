@@ -87,12 +87,6 @@ export class ClassicMode implements IGameMode {
     this.demoMoveIndex = 0;
     this.selectedDifficulty = null;
 
-    // Place the initial shape on the chamber
-    gameState.chamber = this.gameLogic.placeShapeOnChamber(
-      gameLoopState.newShapeIdx,
-      gameState.chamber
-    );
-
     // Initialize preview with the next shape
     gameState.previewChamber = PreviewManager.addPreviewNextShape(
       gameLoopState.newShapeIdx,
