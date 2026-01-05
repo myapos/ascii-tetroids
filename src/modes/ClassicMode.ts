@@ -606,7 +606,12 @@ export class ClassicMode implements IGameMode {
         }
 
         // Call render callback only if still in demo mode
-        if (this.onRenderCallback && this.demoSequence) {
+        // Stop calling callback immediately when transitioning to player mode
+        if (
+          this.onRenderCallback &&
+          this.demoSequence &&
+          mediator.getCurrentPhase() === "demo"
+        ) {
           this.onRenderCallback();
         }
       }

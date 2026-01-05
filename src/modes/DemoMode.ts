@@ -307,6 +307,15 @@ export class DemoMode implements IGameMode {
     console.log(footerSplashArt);
   }
 
+  private clearDemoFooter(): void {
+    // Clear the demo footer - it's demoFooterLines.length lines of content
+    // plus 1 for the console.log newline = demoFooterLines.length + 1
+    const footerHeight = demoFooterLines.length + 1;
+    for (let i = 0; i < footerHeight; i++) {
+      Terminal.clearPreviousLine();
+    }
+  }
+
   isUserInitiated(): boolean {
     return getGameStateMediator().isUserInitiated();
   }
