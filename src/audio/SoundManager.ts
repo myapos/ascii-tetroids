@@ -2,6 +2,10 @@ import { spawn } from "child_process";
 import { resolve } from "path";
 import { existsSync } from "fs";
 import { debounce } from "../utils/debounce.js";
+import {
+  SOUND_MOVE_DEBOUNCE,
+  SOUND_BLOCK_REST_DEBOUNCE,
+} from "../constants/constants.js";
 
 // When bundled, resolve paths relative to where node is being run from
 // In dev mode (tsx), files are in src/audio/sounds
@@ -40,13 +44,22 @@ const SOUND_LIBRARY: Record<SoundType, SoundConfig> = {
 
 export class SoundManager {
   private volume = 0.5; // Default volume 0.0 - 1.0
-  private playMove = debounce(() => this.playSound("move"), 100);
+  private playMove = debounce(
+    () => this.playSound("move"),
+    SOUND_MOVE_DEBOUNCE
+  );
   private playLineComplete = debounce(
     () => this.playSound("lineComplete"),
-    100
+    SOUND_MOVE_DEBOUNCE
   );
-  private playGameLoss = debounce(() => this.playSound("gameLoss"), 100);
-  private playBlockRest = debounce(() => this.playSound("blockRest"), 50);
+  private playGameLoss = debounce(
+    () => this.playSound("gameLoss"),
+    SOUND_MOVE_DEBOUNCE
+  );
+  private playBlockRest = debounce(
+    () => this.playSound("blockRest"),
+    SOUND_BLOCK_REST_DEBOUNCE
+  );
 
   setVolume(volume: number): void {
     this.volume = Math.max(0.0, Math.min(1.0, volume));

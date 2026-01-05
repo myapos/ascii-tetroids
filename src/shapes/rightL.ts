@@ -1,9 +1,9 @@
 import type { Shape } from "src/types";
-import { LIVE } from "src/constants/constants";
+import { LIVE, EMPTY } from "src/constants/constants";
 
 const rightL: Shape = [
-  [".", LIVE],
-  [".", LIVE],
+  [EMPTY, LIVE],
+  [EMPTY, LIVE],
   [LIVE, LIVE],
 ];
 

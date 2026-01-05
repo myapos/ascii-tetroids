@@ -1,10 +1,11 @@
 import type { Chamber } from "src/types";
 import { Terminal } from "./Terminal";
+import { FRAME_RATE } from "src/constants/constants";
 
 export class Renderer {
   private frameRate: number;
 
-  constructor(frameRate: number = 50) {
+  constructor(frameRate: number = FRAME_RATE) {
     this.frameRate = frameRate;
   }
 
