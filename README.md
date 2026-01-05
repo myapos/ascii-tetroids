@@ -201,6 +201,152 @@ Legend:
   ● Singleton pattern
 ```
 
+### UML Class Diagram
+
+```
+┌──────────────────────────────┐
+│      <<interface>>           │
+│       IGameMode              │
+├──────────────────────────────┤
+│ + play(gameState, diff): ... │
+└──────────────────────────────┘
+         △                △
+         │ implements     │ implements
+         │                │
+    ┌────────────┐   ┌─────────────┐
+    │ DemoMode   │   │ ClassicMode │
+    ├────────────┤   ├─────────────┤
+    │ - modeLife │   │ - modeLife  │
+    │ - renderer │   │ - renderer  │
+    │ - gameLogic│   │ - gameLogic │
+    │ - mediator │   │ - mediator  │
+    └────────────┘   └─────────────┘
+         │                │
+         └────────┬───────┘
+                  │ uses
+                  ▼
+    ┌──────────────────────────┐
+    │   ModeLifecycle          │
+    ├──────────────────────────┤
+    │ - inputHandler           │
+    │ - listeners: Map         │
+    ├──────────────────────────┤
+    │ + registerListener()     │
+    │ + cleanup()              │
+    │ + activate()             │
+    │ + isRunning(): boolean   │
+    └──────────────────────────┘
+         │
+         │ uses
+         ▼
+    ┌──────────────────────────┐
+    │   InputHandler           │
+    ├──────────────────────────┤
+    │ - listeners: Map         │
+    │ - stdin: ReadStream      │
+    ├──────────────────────────┤
+    │ + on(event, handler)     │
+    │ + off(event, handler)    │
+    │ + emit(event)            │
+    │ + start()                │
+    │ + stop()                 │
+    └──────────────────────────┘
+
+
+┌──────────────────────────────┐
+│    GameStateMediator         │
+│   <<singleton>>              │
+├──────────────────────────────┤
+│ - currentPhase: GamePhase    │
+│ - selectedDifficulty         │
+│ - isUserInitiatedGame        │
+│ - eventListeners: Map        │
+├──────────────────────────────┤
+│ + getCurrentPhase()          │
+│ + setPhase(phase)            │
+│ + getSelectedDifficulty()    │
+│ + setSelectedDifficulty()    │
+│ + on(eventType, handler)     │
+│ + emit(event)                │
+└──────────────────────────────┘
+         △
+         │ injected
+         │ into modes
+         │
+    ┌────────────────────────────┐
+    │    Game Container          │
+    ├────────────────────────────┤
+    │ - gameLogic                │
+    │ - renderer                 │
+    │ - inputHandler             │
+    │ - difficulty               │
+    ├────────────────────────────┤
+    │ + runMode(mode)            │
+    └────────────────────────────┘
+
+
+┌──────────────────────────────┐
+│     GameLogic                │
+├──────────────────────────────┤
+│ - shapes: Map                │
+│ - gameRules                  │
+├──────────────────────────────┤
+│ + rotateShape(chamber)       │
+│ + moveShapeDown(chamber)     │
+│ + moveShapeWithGas(ch, dir)  │
+│ + restShape(chamber)         │
+│ + checkFilledRows(chamber)   │
+│ + checkIfPlayerLost()        │
+└──────────────────────────────┘
+
+
+┌──────────────────────────────┐
+│     Renderer                 │
+├──────────────────────────────┤
+│ - terminal: Terminal         │
+│ - outputBuffer               │
+├──────────────────────────────┤
+│ + renderFrame(chamber, prev) │
+│ + enterGame()                │
+│ + exitGame()                 │
+└──────────────────────────────┘
+         │
+         │ uses
+         ▼
+    ┌──────────────────────────┐
+    │    Terminal              │
+    ├──────────────────────────┤
+    │ - stdout                 │
+    │ - ansiBuf                │
+    ├──────────────────────────┤
+    │ + write(text)            │
+    │ + colorizeText(text)     │
+    │ + clear()                │
+    └──────────────────────────┘
+
+
+┌──────────────────────────────┐
+│    GameState                 │
+├──────────────────────────────┤
+│ - chamber: number[][]        │
+│ - previewChamber: number[][] │
+│ - score: number              │
+│ - level: number              │
+│ - isPaused: boolean          │
+│ - isActive: boolean          │
+│ - gravitySpeed: number       │
+├──────────────────────────────┤
+│ + reset(chamber, preview)    │
+└──────────────────────────────┘
+
+
+Key Relationships:
+  ──────→  Dependency (uses)
+  ───implements→  Implementation
+  - - - -→  Optional/Reference
+  △       Inheritance/Implementation
+```
+
 ### Architectural Patterns
 
 #### 1. **Dependency Injection (Application Layer)**
