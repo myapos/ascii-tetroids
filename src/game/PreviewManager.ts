@@ -1,4 +1,5 @@
 import type { Chamber } from "src/types";
+import type { IDifficultyLevel } from "src/difficulty/DifficultyLevel";
 import {
   PREVIEW,
   LIVE,
@@ -9,6 +10,7 @@ import {
   NEXT_WORD,
   LEVEL_WORD,
   SCORE_WORD,
+  DIFFICULTY_LABEL,
 } from "src/constants/constants";
 import { getShapes } from "src/shapes/createShapes";
 import clone from "src/utils/clone";
@@ -26,7 +28,8 @@ export class PreviewManager {
     shapeIdx: number,
     previewChamber: Chamber,
     curLevel: number,
-    score: number = 0
+    score: number = 0,
+    difficulty?: IDifficultyLevel
   ): Chamber {
     const emptyRow = Array.from({ length: previewChamber[0].length }).map(
       () => PREVIEW
@@ -93,6 +96,25 @@ export class PreviewManager {
 
     // add empty row for spacing
     shape.push(emptyRow);
+
+    // add difficulty label if difficulty is provided
+    if (difficulty) {
+      const difficultyRow = [];
+      for (let i = 0; i < previewChamber[0].length; i++) {
+        if (i < DIFFICULTY_LABEL.length) {
+          difficultyRow.push(DIFFICULTY_LABEL[i]);
+        } else {
+          difficultyRow.push(PREVIEW);
+        }
+      }
+      shape.push(difficultyRow);
+      // add difficulty full name
+      const difficultyInfo = difficulty.getName().split("");
+      shape.push(difficultyInfo);
+
+      // add empty row for spacing
+      shape.push(emptyRow);
+    }
 
     // add Game Boy control schema with arrow symbols - left aligned
     //   ⟳

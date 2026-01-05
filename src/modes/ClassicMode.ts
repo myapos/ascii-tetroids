@@ -98,7 +98,8 @@ export class ClassicMode implements IGameMode {
       gameLoopState.newShapeIdx,
       gameState.previewChamber,
       gameState.level,
-      gameState.score
+      gameState.score,
+      difficulty
     );
 
     // Set game as active
@@ -450,7 +451,8 @@ export class ClassicMode implements IGameMode {
       gameLoopState.newShapeIdx,
       gameState.previewChamber,
       gameState.level,
-      gameState.score
+      gameState.score,
+      difficulty
     );
 
     try {
@@ -602,7 +604,8 @@ export class ClassicMode implements IGameMode {
             gameLoopState.newShapeIdx,
             gameState.previewChamber,
             gameState.level,
-            gameState.score
+            gameState.score,
+            difficulty
           );
           gameLoopState.hasRested = false;
         }

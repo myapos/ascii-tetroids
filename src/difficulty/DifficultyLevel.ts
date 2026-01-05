@@ -10,6 +10,7 @@ export interface IDifficultyLevel {
   getGravitySpeedIncrement(): number;
   getMaximumSpeed(): number;
   getLevelLinesRequired(): number;
+  getName(): string;
 }
 
 export class EasyDifficulty implements IDifficultyLevel {
@@ -27,6 +28,10 @@ export class EasyDifficulty implements IDifficultyLevel {
 
   getLevelLinesRequired(): number {
     return LEVEL_LINES_DIFF / 2;
+  }
+
+  getName(): string {
+    return "EASY";
   }
 }
 
@@ -46,6 +51,10 @@ export class NormalDifficulty implements IDifficultyLevel {
   getLevelLinesRequired(): number {
     return LEVEL_LINES_DIFF / 2;
   }
+
+  getName(): string {
+    return "NORMAL";
+  }
 }
 
 export class HardDifficulty implements IDifficultyLevel {
@@ -63,5 +72,9 @@ export class HardDifficulty implements IDifficultyLevel {
 
   getLevelLinesRequired(): number {
     return LEVEL_LINES_DIFF;
+  }
+
+  getName(): string {
+    return "HARD";
   }
 }

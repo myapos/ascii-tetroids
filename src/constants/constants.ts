@@ -22,6 +22,11 @@ export const PREVIEW_LABELS = [
   "L",
   "D",
   "R",
+  "I",
+  "F",
+  "U",
+  "T",
+  "Y",
   "s",
   "p",
   "a",
@@ -34,10 +39,29 @@ export const PREVIEW_LABELS = [
   "i",
   "t",
   '"',
+  "y",
+  "E",
+  "N",
+  "O",
+  "M",
+  "H",
+  "A",
 ];
 export const NEXT_WORD = ["N", "E", "X", "T"];
 export const LEVEL_WORD = ["L", "E", "V", "E", "L"];
 export const SCORE_WORD = ["S", "C", "O", "R", "E"];
+export const DIFFICULTY_LABEL = [
+  "D",
+  "I",
+  "F",
+  "F",
+  "I",
+  "C",
+  "U",
+  "L",
+  "T",
+  "Y",
+];
 
 // Demo mode settings
 export const DEMO_MOVEMENTS = ["<", ">", "rotate", "<", ">", "rotate", "down"];
