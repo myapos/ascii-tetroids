@@ -1,8 +1,8 @@
-export const LIVE = "○";
+export const LIVE = "●";
 export const REST = "■";
 export const FLOOR = "━";
 export const SIDE_WALL = "║";
-export const EMPTY = "●"; // Filled black circle for visibility
+export const EMPTY = "○"; // Filled black circle for visibility
 export const PREVIEW = " ";
 export const PREVIEW_SHAPE = "O"; // Shape character for preview chamber
 
