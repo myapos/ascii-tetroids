@@ -181,7 +181,7 @@ describe("ClassicMode", () => {
       // Call the play handler while game is active
       // Handler should return early without calling reset again
       const playHandler = handlers.get("play")!;
-      const initialResetCount = (gameState.reset as any).mock.calls.length;
+      const initialResetCount = gameState.reset.mock.calls.length;
       playHandler({
         type: "play",
         timestamp: Date.now(),
@@ -189,7 +189,7 @@ describe("ClassicMode", () => {
 
       // Reset should NOT be called again by the handler because gameState.isActive is true
       // Handler early-returns when game is active
-      const finalResetCount = (gameState.reset as any).mock.calls.length;
+      const finalResetCount = gameState.reset.mock.calls.length;
       expect(finalResetCount).toBe(initialResetCount);
     });
 
