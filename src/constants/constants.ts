@@ -1,4 +1,4 @@
-export const LIVE = "⬤";
+export const LIVE = "○";
 export const REST = "■";
 export const FLOOR = "━";
 export const SIDE_WALL = "║";
