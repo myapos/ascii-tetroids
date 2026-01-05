@@ -1,9 +1,10 @@
-export const LIVE = "O";
-export const REST = "#";
-export const FLOOR = "=";
-export const SIDE_WALL = "|";
-export const EMPTY = "·"; // Unicode middle dot for better visibility
+export const LIVE = "⬤";
+export const REST = "■";
+export const FLOOR = "━";
+export const SIDE_WALL = "║";
+export const EMPTY = "●"; // Filled black circle for visibility
 export const PREVIEW = " ";
+export const PREVIEW_SHAPE = "#"; // Shape character for preview chamber
 
 export const MAX_CHAMBER_HEIGHT = 25;
 export const NUM_OF_COLS = 17;

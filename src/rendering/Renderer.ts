@@ -10,12 +10,18 @@ export class Renderer {
   }
 
   async renderFrame(chamber: Chamber, previewChamber: Chamber) {
-    const visibleRows = chamber.map((row, i) => [...row, ...previewChamber[i]]);
-
     Terminal.moveCursorHome();
     Terminal.write(
-      visibleRows
-        .map((row) => row.map((cell) => Terminal.colorizeCell(cell)).join(""))
+      chamber
+        .map((row, i) => {
+          const gameRow = row
+            .map((cell) => Terminal.colorizeCell(cell))
+            .join(" ");
+          const previewRow = previewChamber[i]
+            .map((cell) => Terminal.colorizeCell(cell))
+            .join("");
+          return gameRow + previewRow;
+        })
         .join("\n") + "\n"
     );
 
