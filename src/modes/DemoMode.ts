@@ -23,13 +23,15 @@ import {
   SPLASH_SCREEN_DELAY,
   DIFFICULTY_SELECTION_TIMEOUT,
 } from "src/constants/constants";
+import { getGameStateMediator } from "src/state/GameStateMediator";
+import { ModeContext } from "src/state/ModeContext";
 
 export class DemoMode implements IGameMode {
   private gameLogic: GameLogic;
   private renderer: Renderer;
   private inputHandler: InputHandler;
   private classicMode!: ClassicMode;
-  private wasUserInitiated = false;
+  private modeContext!: ModeContext;
   private playListener: ((event: unknown) => void) | null = null;
   private menuActive = false;
 
@@ -58,29 +60,63 @@ export class DemoMode implements IGameMode {
     gameState: GameState,
     difficulty: IDifficultyLevel
   ): Promise<void> {
+    const mediator = getGameStateMediator();
+    this.modeContext = new ModeContext(this.inputHandler);
+    this.modeContext.activate();
+
     await this.initialize();
     this.displaySplashScreen();
+    mediator.setPhase("splash");
 
     // Wait for user to press P or timeout
     const { userInitiatedPlay, selectedDifficulty } =
       await this.waitForPlayOrTimeout(difficulty);
 
-    // Clean up splash screen listener before entering game mode
-    if (this.playListener) {
-      this.inputHandler.off("play", this.playListener);
-    }
+    // Track user initiation in mediator
+    mediator.setUserInitiated(userInitiatedPlay);
 
     // Use selected difficulty if user initiated play, otherwise use default
-    const gameModeDifficulty = selectedDifficulty || difficulty;
+    let gameModeDifficulty = selectedDifficulty || difficulty;
 
-    const mode = new ClassicMode(
-      this.gameLogic,
-      this.renderer,
-      this.inputHandler,
-      userInitiatedPlay ? undefined : await readMovements(),
-      userInitiatedPlay ? undefined : () => this.displayDemoFooter()
-    );
-    await mode.play(gameState, gameModeDifficulty);
+    try {
+      const mode = new ClassicMode(
+        this.gameLogic,
+        this.renderer,
+        this.inputHandler,
+        userInitiatedPlay ? undefined : await readMovements(),
+        userInitiatedPlay ? undefined : () => this.displayDemoFooter()
+      );
+
+      // If not user-initiated, we're in demo phase - mode will signal when to exit
+      if (!userInitiatedPlay) {
+        mediator.setPhase("demo");
+      } else {
+        mediator.setPhase("playing");
+      }
+
+      await mode.play(gameState, gameModeDifficulty);
+
+      // Check if user pressed play during demo
+      if (mediator.getCurrentPhase() === "playing" && !userInitiatedPlay) {
+        // User pressed P during demo, transition to player mode
+        gameModeDifficulty = mediator.getSelectedDifficulty() || difficulty;
+
+        // Clean up demo mode listeners before starting player mode
+        this.modeContext.cleanup();
+
+        // Restart game in player mode
+        const playerMode = new ClassicMode(
+          this.gameLogic,
+          this.renderer,
+          this.inputHandler
+        );
+        await playerMode.play(gameState, gameModeDifficulty);
+      }
+    } finally {
+      // Clean up all listeners
+      this.modeContext.cleanup();
+      mediator.reset();
+    }
   }
 
   private async waitForPlayOrTimeout(
@@ -89,12 +125,24 @@ export class DemoMode implements IGameMode {
     userInitiatedPlay: boolean;
     selectedDifficulty?: IDifficultyLevel;
   }> {
+    const mediator = getGameStateMediator();
     return new Promise((resolve) => {
       let userPressed = false;
+      let isInDemoPhase = false;
 
       this.playListener = async () => {
+        // If we're in demo phase, handle showing the menu
+        if (isInDemoPhase) {
+          const selectedDifficulty = await this.showDifficultyMenu();
+          mediator.setSelectedDifficulty(selectedDifficulty);
+          mediator.setPhase("playing");
+          // Note: Don't resolve here - just signal phase change
+          // ClassicMode will detect this via mediator and exit the demo loop
+          return;
+        }
+
+        // Otherwise, we're in splash screen phase
         userPressed = true;
-        this.wasUserInitiated = true;
 
         // Show difficulty menu (clears itself on selection)
         const selectedDifficulty = await this.showDifficultyMenu();
@@ -102,12 +150,15 @@ export class DemoMode implements IGameMode {
         resolve({ userInitiatedPlay: true, selectedDifficulty });
       };
 
-      this.inputHandler.on("play", this.playListener);
+      this.modeContext.registerListener("play", this.playListener);
       this.inputHandler.start();
 
       // Timeout after 10 seconds to auto-start demo
       setTimeout(() => {
         if (!userPressed) {
+          // Set flag to indicate we're in demo phase now
+          isInDemoPhase = true;
+          // Don't clean up the listener - keep it active for P presses during demo
           resolve({
             userInitiatedPlay: false,
             selectedDifficulty: defaultDifficulty,
@@ -190,6 +241,7 @@ export class DemoMode implements IGameMode {
         Terminal.moveCursorHome();
         Terminal.clearFromCursorToEndOfScreen();
         cleanup();
+        resolve(new NormalDifficulty());
       }, DIFFICULTY_SELECTION_TIMEOUT);
     });
   }
@@ -256,10 +308,10 @@ export class DemoMode implements IGameMode {
   }
 
   isUserInitiated(): boolean {
-    return this.wasUserInitiated;
+    return getGameStateMediator().isUserInitiated();
   }
 
   resetUserInitiatedFlag(): void {
-    this.wasUserInitiated = false;
+    getGameStateMediator().setUserInitiated(false);
   }
 }
