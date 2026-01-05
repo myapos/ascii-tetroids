@@ -23,26 +23,29 @@ import {
   SPLASH_SCREEN_DELAY,
   DIFFICULTY_SELECTION_TIMEOUT,
 } from "src/constants/constants";
-import { getGameStateMediator } from "src/state/GameStateMediator";
-import { ModeContext } from "src/state/ModeContext";
+import type { GameStateMediator } from "src/state/GameStateMediator";
+import { ModeLifecycle } from "src/state/ModeLifecycle";
 
 export class DemoMode implements IGameMode {
   private gameLogic: GameLogic;
   private renderer: Renderer;
   private inputHandler: InputHandler;
+  private mediator: GameStateMediator;
   private classicMode!: ClassicMode;
-  private modeContext!: ModeContext;
+  private modeLifecycle!: ModeLifecycle;
   private playListener: ((event: unknown) => void) | null = null;
   private menuActive = false;
 
   constructor(
     gameLogic: GameLogic,
     renderer: Renderer,
-    inputHandler: InputHandler
+    inputHandler: InputHandler,
+    mediator: GameStateMediator
   ) {
     this.gameLogic = gameLogic;
     this.renderer = renderer;
     this.inputHandler = inputHandler;
+    this.mediator = mediator;
   }
 
   async initialize(): Promise<void> {
@@ -51,6 +54,7 @@ export class DemoMode implements IGameMode {
       this.gameLogic,
       this.renderer,
       this.inputHandler,
+      this.mediator,
       movements,
       () => this.displayDemoFooter()
     );
@@ -60,9 +64,9 @@ export class DemoMode implements IGameMode {
     gameState: GameState,
     difficulty: IDifficultyLevel
   ): Promise<void> {
-    const mediator = getGameStateMediator();
-    this.modeContext = new ModeContext(this.inputHandler);
-    this.modeContext.activate();
+    const mediator = this.mediator;
+    this.modeLifecycle = new ModeLifecycle(this.inputHandler);
+    this.modeLifecycle.activate();
 
     await this.initialize();
     this.displaySplashScreen();
@@ -79,22 +83,23 @@ export class DemoMode implements IGameMode {
     let gameModeDifficulty = selectedDifficulty || difficulty;
 
     try {
-      const mode = new ClassicMode(
+      const autoMode = new ClassicMode(
         this.gameLogic,
         this.renderer,
         this.inputHandler,
+        this.mediator,
         userInitiatedPlay ? undefined : await readMovements(),
         userInitiatedPlay ? undefined : () => this.displayDemoFooter()
       );
 
-      // If not user-initiated, we're in demo phase - mode will signal when to exit
+      // If not user-initiated, we're in demo phase - autoMode will signal when to exit
       if (!userInitiatedPlay) {
         mediator.setPhase("demo");
       } else {
         mediator.setPhase("playing");
       }
 
-      await mode.play(gameState, gameModeDifficulty);
+      await autoMode.play(gameState, gameModeDifficulty);
 
       // Check if user pressed play during demo
       if (mediator.getCurrentPhase() === "playing" && !userInitiatedPlay) {
@@ -102,19 +107,20 @@ export class DemoMode implements IGameMode {
         gameModeDifficulty = mediator.getSelectedDifficulty() || difficulty;
 
         // Clean up demo mode listeners before starting player mode
-        this.modeContext.cleanup();
+        this.modeLifecycle.cleanup();
 
         // Restart game in player mode
         const playerMode = new ClassicMode(
           this.gameLogic,
           this.renderer,
-          this.inputHandler
+          this.inputHandler,
+          this.mediator
         );
         await playerMode.play(gameState, gameModeDifficulty);
       }
     } finally {
       // Clean up all listeners
-      this.modeContext.cleanup();
+      this.modeLifecycle.cleanup();
       mediator.reset();
     }
   }
@@ -125,7 +131,7 @@ export class DemoMode implements IGameMode {
     userInitiatedPlay: boolean;
     selectedDifficulty?: IDifficultyLevel;
   }> {
-    const mediator = getGameStateMediator();
+    const mediator = this.mediator;
     return new Promise((resolve) => {
       let userPressed = false;
 
@@ -149,7 +155,7 @@ export class DemoMode implements IGameMode {
         resolve({ userInitiatedPlay: true, selectedDifficulty });
       };
 
-      this.modeContext.registerListener("play", this.playListener);
+      this.modeLifecycle.registerListener("play", this.playListener);
       this.inputHandler.start();
 
       // Timeout after 10 seconds to auto-start demo
@@ -316,10 +322,10 @@ export class DemoMode implements IGameMode {
   }
 
   isUserInitiated(): boolean {
-    return getGameStateMediator().isUserInitiated();
+    return this.mediator.isUserInitiated();
   }
 
   resetUserInitiatedFlag(): void {
-    getGameStateMediator().setUserInitiated(false);
+    this.mediator.setUserInitiated(false);
   }
 }

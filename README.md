@@ -2,7 +2,7 @@
 
 A TypeScript implementation of a terminal-based block-stacking puzzle game, rendered with ASCII art.
 
-> **Note**: This is a fan implementation inspired by the classic Tetris game. Tetris® is a registered trademark of The Tetris Company. This project is not affiliated with or endorsed by The Tetris Company.
+> **Note**: This is a fan implementation inspired by the classic Tetroids game. Tetris® is a registered trademark of The Tetroids Company. This project is not affiliated with or endorsed by The Tetroids Company.
 
 ## Getting Started
 
@@ -79,22 +79,22 @@ This project uses the **Mediator Pattern** to decouple game modes and manage sta
 
 ```
 src/
-├── GameApplication.ts          # Application entry point, mode orchestration
+├── GameApplication.ts          # Application entry point, explicit dependency wiring
 ├── mainEngine.ts               # Legacy game engine
 ├── index.ts                    # CLI entry point
 ├── inputSample.txt             # Sample input file
 ├── types.ts                    # Shared type definitions
 │
-├── domain/                     # Core game domain
+├── domain/                    # Core game domain
 │   └── GameState.ts           # Game state interface and class
 │
-├── game/                       # Game logic layer
-│   ├── Game.ts                # Game singleton, manages renderer/logic
+├── game/                      # Game logic layer
+│   ├── Game.ts                # Game container (receives all dependencies)
 │   ├── GameLogic.ts           # Core game rules (move, rotate, collide, etc.)
 │   ├── PreviewManager.ts      # Next piece preview chamber
 │   └── __tests__/             # Game logic tests
 │
-├── modes/                     # Game mode implementations (Mediator Pattern)
+├── modes/                     # Game mode implementations (Strategy Pattern)
 │   ├── IGameMode.ts           # Interface that all modes implement
 │   ├── DemoMode.ts            # Splash screen + demo gameplay
 │   ├── ClassicMode.ts         # Player-controlled game mode
@@ -103,8 +103,8 @@ src/
 │   └── __tests__/             # Mode-specific tests
 │
 ├── state/                     # State management (Mediator Pattern)
-│   ├── GameStateMediator.ts   # Centralized game state and phase tracking
-│   └── ModeContext.ts         # Per-mode resource and listener management
+│   ├── GameStateMediator.ts   # Centralized game state and phase tracking (Singleton)
+│   └── ModeLifecycle.ts       # Per-mode resource and listener management
 │
 ├── rendering/                 # Terminal rendering layer
 │   ├── Renderer.ts            # Game frame renderer
@@ -147,51 +147,314 @@ src/
     └── __tests__/             # Utility tests
 ```
 
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          GameApplication                                │
+│                       (Entry Point, DI Container)                       │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                ┌───────────────────┼───────────────────┐
+                │                   │                   │
+                ▼                   ▼                   ▼
+        ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐
+        │  GameLogic   │   │  Renderer    │   │  InputHandler    │
+        │ (Game Rules) │   │  (Terminal)  │   │  (Event Emitter) │
+        └──────────────┘   └──────────────┘   └──────────────────┘
+                │                   │                   │
+                └───────────────────┼───────────────────┘
+                                    │
+                                    ▼
+                        ┌─────────────────────┐
+                        │  Game Container     │
+                        │  (Orchestrator)     │
+                        └─────────────────────┘
+                                    │
+                ┌───────────────────┼───────────────────┐
+                │                   │                   │
+                ▼                   ▼                   ▼
+        ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐
+        │  DemoMode   │    │ ClassicMode │    │GameStateMediator│
+        │ (Strategy)  │    │ (Strategy)  │    │   (Singleton)   │
+        └─────────────┘    └─────────────┘    └─────────────────┘
+                │                   │                   ▲
+                │                   │                   │
+                ▼                   ▼                   │
+        ┌─────────────────────────────────────────────────┐
+        │        ModeLifecycle (Per-Mode)                 │
+        │   - registerListener(event, handler)            │
+        │   - cleanup() on mode exit                      │
+        └─────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌─────────────────────────────────────────────────┐
+        │           Audio System                          │
+        │  - SoundManager (effects)                       │
+        │  - BackgroundMusic (singleton)                  │
+        └─────────────────────────────────────────────────┘
+
+
+Legend:
+  → Dependency flow (top-down injection)
+  ↑ State queries/updates
+  ● Singleton pattern
+```
+
+### UML Class Diagram
+
+```
+┌──────────────────────────────┐
+│      <<interface>>           │
+│       IGameMode              │
+├──────────────────────────────┤
+│ + play(gameState, diff): ... │
+└──────────────────────────────┘
+         △                △
+         │ implements     │ implements
+         │                │
+    ┌────────────┐   ┌─────────────┐
+    │ DemoMode   │   │ ClassicMode │
+    ├────────────┤   ├─────────────┤
+    │ - modeLife │   │ - modeLife  │
+    │ - renderer │   │ - renderer  │
+    │ - gameLogic│   │ - gameLogic │
+    │ - mediator │   │ - mediator  │
+    └────────────┘   └─────────────┘
+         │                │
+         └────────┬───────┘
+                  │ uses
+                  ▼
+    ┌──────────────────────────┐
+    │   ModeLifecycle          │
+    ├──────────────────────────┤
+    │ - inputHandler           │
+    │ - listeners: Map         │
+    ├──────────────────────────┤
+    │ + registerListener()     │
+    │ + cleanup()              │
+    │ + activate()             │
+    │ + isRunning(): boolean   │
+    └──────────────────────────┘
+         │
+         │ uses
+         ▼
+    ┌──────────────────────────┐
+    │   InputHandler           │
+    ├──────────────────────────┤
+    │ - listeners: Map         │
+    │ - stdin: ReadStream      │
+    ├──────────────────────────┤
+    │ + on(event, handler)     │
+    │ + off(event, handler)    │
+    │ + emit(event)            │
+    │ + start()                │
+    │ + stop()                 │
+    └──────────────────────────┘
+
+
+┌──────────────────────────────┐
+│    GameStateMediator         │
+│   <<singleton>>              │
+├──────────────────────────────┤
+│ - currentPhase: GamePhase    │
+│ - selectedDifficulty         │
+│ - isUserInitiatedGame        │
+│ - eventListeners: Map        │
+├──────────────────────────────┤
+│ + getCurrentPhase()          │
+│ + setPhase(phase)            │
+│ + getSelectedDifficulty()    │
+│ + setSelectedDifficulty()    │
+│ + on(eventType, handler)     │
+│ + emit(event)                │
+└──────────────────────────────┘
+         △
+         │ injected
+         │ into modes
+         │
+    ┌────────────────────────────┐
+    │    Game Container          │
+    ├────────────────────────────┤
+    │ - gameLogic                │
+    │ - renderer                 │
+    │ - inputHandler             │
+    │ - difficulty               │
+    ├────────────────────────────┤
+    │ + runMode(mode)            │
+    └────────────────────────────┘
+
+
+┌──────────────────────────────┐
+│     GameLogic                │
+├──────────────────────────────┤
+│ - shapes: Map                │
+│ - gameRules                  │
+├──────────────────────────────┤
+│ + rotateShape(chamber)       │
+│ + moveShapeDown(chamber)     │
+│ + moveShapeWithGas(ch, dir)  │
+│ + restShape(chamber)         │
+│ + checkFilledRows(chamber)   │
+│ + checkIfPlayerLost()        │
+└──────────────────────────────┘
+
+
+┌──────────────────────────────┐
+│     Renderer                 │
+├──────────────────────────────┤
+│ - terminal: Terminal         │
+│ - outputBuffer               │
+├──────────────────────────────┤
+│ + renderFrame(chamber, prev) │
+│ + enterGame()                │
+│ + exitGame()                 │
+└──────────────────────────────┘
+         │
+         │ uses
+         ▼
+    ┌──────────────────────────┐
+    │    Terminal              │
+    ├──────────────────────────┤
+    │ - stdout                 │
+    │ - ansiBuf                │
+    ├──────────────────────────┤
+    │ + write(text)            │
+    │ + colorizeText(text)     │
+    │ + clear()                │
+    └──────────────────────────┘
+
+
+┌──────────────────────────────┐
+│    GameState                 │
+├──────────────────────────────┤
+│ - chamber: number[][]        │
+│ - previewChamber: number[][] │
+│ - score: number              │
+│ - level: number              │
+│ - isPaused: boolean          │
+│ - isActive: boolean          │
+│ - gravitySpeed: number       │
+├──────────────────────────────┤
+│ + reset(chamber, preview)    │
+└──────────────────────────────┘
+
+
+Key Relationships:
+  ──────→  Dependency (uses)
+  ───implements→  Implementation
+  - - - -→  Optional/Reference
+  △       Inheritance/Implementation
+```
+
 ### Architectural Patterns
 
-#### 1. **Mediator Pattern (Game State Management)**
+#### 1. **Dependency Injection (Application Layer)**
+
+The `GameApplication` class wires up all dependencies explicitly, eliminating global state:
+
+**Key Components:**
+
+- **GameApplication** (`src/GameApplication.ts`)
+  - Creates core components: `GameLogic`, `Renderer`, `InputHandler`
+  - Gets singleton mediator: `getGameStateMediator()`
+  - Creates `Game` container with all dependencies
+  - Creates modes with injected dependencies
+  - Manages game loop orchestration
+
+**Benefits:**
+
+- ✅ No hidden `getInstance()` calls in modes
+- ✅ All dependencies visible in constructors
+- ✅ Easy to mock for testing
+- ✅ Clear data flow from entry point
+
+**Example:**
+
+```typescript
+const gameLogic = new GameLogic();
+const renderer = new Renderer();
+const inputHandler = new InputHandler();
+const mediator = getGameStateMediator();
+
+const game = new Game(gameLogic, renderer, inputHandler, difficulty);
+const classicMode = new ClassicMode(
+  gameLogic,
+  renderer,
+  inputHandler,
+  mediator
+);
+```
+
+#### 2. **Mediator Pattern (Game State Management)**
 
 The `GameStateMediator` class serves as a single source of truth for game state, eliminating tight coupling between game modes.
 
 **Key Components:**
 
-- **GameStateMediator** (`src/state/GameStateMediator.ts`)
+- **GameStateMediator** (`src/state/GameStateMediator.ts`) - Singleton
   - Tracks game phase: `splash | demo | playing | game-over`
   - Manages selected difficulty
   - Tracks user initiation (P pressed from splash vs. auto-start)
   - Provides event system for phase change notifications
-  - Singleton instance via `getGameStateMediator()`
+  - Created once via `getGameStateMediator()`, then injected into modes
 
 **Benefits:**
 
+- ✅ Modes receive mediator as dependency, not via global function
+- ✅ Single source of truth for game state
 - ✅ Modes communicate through mediator, not directly with each other
-- ✅ No callback chains or flag passing between modes
 - ✅ Central place to track game state
 - ✅ Easy to add new game phases
 
 **Example Usage:**
 
 ```typescript
-const mediator = getGameStateMediator();
-mediator.setPhase("playing"); // Update phase
-mediator.setSelectedDifficulty(hard); // Store selection
-const phase = mediator.getCurrentPhase(); // Query state
+// In constructor
+constructor(..., mediator: GameStateMediator) {
+  this.mediator = mediator;
+}
+
+// In methods
+this.mediator.setPhase("playing"); // Update phase
+this.mediator.setSelectedDifficulty(hard); // Store selection
+const phase = this.mediator.getCurrentPhase(); // Query state
 ```
 
-#### 2. **Mode Context Pattern (Resource Management)**
+#### 3. **Strategy Pattern (Game Modes)**
 
-The `ModeContext` class manages per-mode resources and automatically cleans up listeners to prevent accumulation.
+The `IGameMode` interface defines a contract for different game modes to implement:
 
 **Key Components:**
 
-- **ModeContext** (`src/state/ModeContext.ts`)
+- **IGameMode** (`src/modes/IGameMode.ts`)
+  - Defines `play(gameState, difficulty): Promise<void>`
+  - Implemented by `DemoMode` and `ClassicMode`
+  - Modes can be swapped without changing game logic
+
+**Benefits:**
+
+- ✅ Easy to add new game modes
+- ✅ Each mode encapsulates its own logic
+- ✅ Game logic is independent of mode implementation
+
+#### 4. **Mode Lifecycle Pattern (Resource Management)**
+
+The `ModeLifecycle` class manages the mode lifecycle - setup and cleanup of resources - and automatically cleans up listeners to prevent accumulation.
+
+**Key Components:**
+
+- **ModeLifecycle** (`src/state/ModeContext.ts`)
+  - Manages mode lifecycle: activation and cleanup
   - Tracks all listeners registered by a mode
   - Provides `registerListener()` method for automatic cleanup tracking
   - Cleanup all listeners with single `cleanup()` call
   - Prevents listener leaks and memory accumulation
+  - Similar to React/Vue onMount/onUnmount lifecycle hooks
 
 **Benefits:**
 
+- ✅ Guaranteed cleanup in all cases (prevents resource leaks)
 - ✅ Automatic listener tracking and cleanup
 - ✅ No orphaned event handlers
 - ✅ Clean mode transitions
@@ -200,22 +463,28 @@ The `ModeContext` class manages per-mode resources and automatically cleans up l
 **Example Usage:**
 
 ```typescript
-const context = new ModeContext(inputHandler);
-context.registerListener("play", handlePlay); // Tracked for cleanup
-context.cleanup(); // Remove all listeners
+const lifecycle = new ModeLifecycle(inputHandler);
+lifecycle.activate(); // onMount
+
+lifecycle.registerListener("play", handlePlay); // Tracked for cleanup
+
+try {
+  // ... mode runs ...
+} finally {
+  lifecycle.cleanup(); // onUnmount - guaranteed to run
+}
 ```
 
-#### 3. **Singleton Patterns**
+#### 5. **Singleton Pattern (Mediator & Audio)**
 
-Several components use the singleton pattern for global state:
+A few components use singleton for global state:
 
-- **Game** (`src/game/Game.ts`) - Single game instance with shared GameState
-- **GameStateMediator** (`src/state/GameStateMediator.ts`) - Single mediator for all modes
+- **GameStateMediator** (`src/state/GameStateMediator.ts`) - Single mediator for all modes (passed via DI)
 - **BackgroundMusic** (`src/audio/BackgroundMusic.ts`) - Single audio instance across modes
 
-#### 4. **Factory Pattern**
+#### 6. **Factory Pattern**
 
-- **createShapes()** (`src/shapes/createShapes.ts`) - Creates all 7 Tetris piece types
+- **createShapes()** (`src/shapes/createShapes.ts`) - Creates all 7 Tetroids piece types
 - **Difficulty Classes** (`src/difficulty/DifficultyLevel.ts`) - Easy/Normal/Hard difficulty objects
 
 ### Data Flow
@@ -225,7 +494,7 @@ User Input
     ↓
 InputHandler (emits events)
     ↓
-ModeContext.registerListener() (tracks listener)
+ModeLifecycle.registerListener() (tracks listener)
     ↓
 Mode Handler (DemoMode or ClassicMode)
     ↓
@@ -233,7 +502,7 @@ GameStateMediator.setPhase() (update state)
     ↓
 Other modes detect phase change via mediator
     ↓
-Mode exits, ModeContext.cleanup() removes all listeners
+Mode exits, ModeLifecycle.cleanup() removes all listeners
 ```
 
 ### Mode Transitions
@@ -262,7 +531,7 @@ Mode exits, ModeContext.cleanup() removes all listeners
           ↓
     Game over or user quit
           ↓
-    ModeContext.cleanup()
+    ModeLifecycle.cleanup()
     Back to DemoMode
 ```
 
@@ -299,7 +568,7 @@ Mode exits, ModeContext.cleanup() removes all listeners
 | Decision                    | Reason                                                 |
 | --------------------------- | ------------------------------------------------------ |
 | **Mediator Pattern**        | Decouples modes from knowing about each other          |
-| **ModeContext**             | Prevents listener accumulation between mode switches   |
+| **ModeLifecycle**           | Prevents listener accumulation between mode switches   |
 | **Singleton Game State**    | Shared state across all modes (chambers, score, level) |
 | **Alternate Screen Buffer** | Prevents frame flicker and terminal scrolling issues   |
 | **Event-Driven Input**      | Decouples input handling from game logic               |
@@ -311,7 +580,7 @@ Mode exits, ModeContext.cleanup() removes all listeners
 To add a new game mode:
 
 1. Create `src/modes/NewMode.ts` implementing `IGameMode`
-2. Use `ModeContext` for listener tracking
+2. Use `ModeLifecycle` for listener tracking
 3. Query `GameStateMediator` for state
 4. Call `mediator.setPhase()` to signal transitions
 5. Update `GameApplication.ts` to route to new mode
