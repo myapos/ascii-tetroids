@@ -66,5 +66,5 @@ export const DIFFICULTY_LABEL = [
 // Demo mode settings
 export const DEMO_MOVEMENTS = ["<", ">", "rotate", "<", ">", "rotate", "down"];
 export const DEMO_MOVE_INTERVAL = 500; // ms between moves
-export const SPLASH_SCREEN_DELAY = 10000;
+export const SPLASH_SCREEN_DELAY = 1000;
 export const DIFFICULTY_SELECTION_TIMEOUT = 15000; // ms

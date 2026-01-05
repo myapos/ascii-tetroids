@@ -1,14 +1,10 @@
 import readFile from "./readFile";
-import { join } from "path";
-import { fileURLToPath } from "url";
+import path from "path";
 import type { UserMove } from "src/types";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = join(__filename, "..");
 
 export async function readMovements(): Promise<UserMove[]> {
   try {
-    const filePath = join(__dirname, "../inputSample.txt");
+    const filePath = path.resolve(process.cwd(), "inputSample.txt");
     const content = await readFile(filePath, "string");
 
     const movements: UserMove[] = [];

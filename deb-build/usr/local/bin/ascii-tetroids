@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Launcher for ASCII Tetroids
+exec node /usr/local/share/ascii-tetroids/index-new.js "$@"
