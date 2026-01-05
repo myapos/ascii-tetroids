@@ -2,7 +2,7 @@
 
 A TypeScript implementation of a terminal-based block-stacking puzzle game, rendered with ASCII art.
 
-> **Note**: This is a fan implementation inspired by the classic Tetris game. Tetris® is a registered trademark of The Tetris Company. This project is not affiliated with or endorsed by The Tetris Company.
+> **Note**: This is a fan implementation inspired by the classic Tetroids game. Tetris® is a registered trademark of The Tetroids Company. This project is not affiliated with or endorsed by The Tetroids Company.
 
 ## Getting Started
 
@@ -484,7 +484,7 @@ A few components use singleton for global state:
 
 #### 6. **Factory Pattern**
 
-- **createShapes()** (`src/shapes/createShapes.ts`) - Creates all 7 Tetris piece types
+- **createShapes()** (`src/shapes/createShapes.ts`) - Creates all 7 Tetroids piece types
 - **Difficulty Classes** (`src/difficulty/DifficultyLevel.ts`) - Easy/Normal/Hard difficulty objects
 
 ### Data Flow
