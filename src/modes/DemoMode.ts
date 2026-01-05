@@ -128,11 +128,10 @@ export class DemoMode implements IGameMode {
     const mediator = getGameStateMediator();
     return new Promise((resolve) => {
       let userPressed = false;
-      let isInDemoPhase = false;
 
       this.playListener = async () => {
         // If we're in demo phase, handle showing the menu
-        if (isInDemoPhase) {
+        if (mediator.getCurrentPhase() === "demo") {
           const selectedDifficulty = await this.showDifficultyMenu();
           mediator.setSelectedDifficulty(selectedDifficulty);
           mediator.setPhase("playing");
@@ -156,8 +155,8 @@ export class DemoMode implements IGameMode {
       // Timeout after 10 seconds to auto-start demo
       setTimeout(() => {
         if (!userPressed) {
-          // Set flag to indicate we're in demo phase now
-          isInDemoPhase = true;
+          // Transition to demo phase
+          mediator.setPhase("demo");
           // Don't clean up the listener - keep it active for P presses during demo
           resolve({
             userInitiatedPlay: false,

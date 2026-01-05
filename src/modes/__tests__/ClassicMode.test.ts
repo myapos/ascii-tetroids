@@ -177,16 +177,18 @@ describe("ClassicMode", () => {
         expect(handlers.has("play")).toBe(true);
 
         // Call the play handler while game is active
-        // Handler should return early without calling reset
+        // Handler should return early without calling reset again
         const playHandler = handlers.get("play")!;
+        const initialResetCount = (gameState.reset as any).mock.calls.length;
         playHandler({
           type: "play",
           timestamp: Date.now(),
         });
 
-        // Reset should NOT be called because gameState.isActive is true
+        // Reset should NOT be called again by the handler because gameState.isActive is true
         // Handler early-returns when game is active
-        expect(gameState.reset).not.toHaveBeenCalled();
+        const finalResetCount = (gameState.reset as any).mock.calls.length;
+        expect(finalResetCount).toBe(initialResetCount);
       } finally {
         vi.useRealTimers();
       }

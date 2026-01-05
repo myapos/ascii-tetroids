@@ -408,4 +408,12 @@ export class GameLogic {
 
     return chamber;
   }
+
+  placeShapeOnChamber(shapeIdx: number, chamber: Chamber): Chamber {
+    const shape = this.shapes.get(shapeIdx)!;
+    const cloned = clone(chamber);
+    cloned.splice(0, shape.length);
+    cloned.unshift(...shape);
+    return cloned;
+  }
 }

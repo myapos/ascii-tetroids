@@ -87,7 +87,13 @@ export class ClassicMode implements IGameMode {
     this.demoMoveIndex = 0;
     this.selectedDifficulty = null;
 
-    // Initialize preview with the first shape
+    // Place the initial shape on the chamber
+    gameState.chamber = this.gameLogic.placeShapeOnChamber(
+      gameLoopState.newShapeIdx,
+      gameState.chamber
+    );
+
+    // Initialize preview with the next shape
     gameState.previewChamber = PreviewManager.addPreviewNextShape(
       gameLoopState.newShapeIdx,
       gameState.previewChamber,
@@ -271,6 +277,11 @@ export class ClassicMode implements IGameMode {
 
     const MAX_QUEUE_SIZE = 2000;
     const shapes = this.gameLogic.getShapes();
+
+    // If in player mode (not demo mode), reset the game state to start fresh
+    if (!this.isInDemoMode) {
+      this.resetGameLoopState(gameState, difficulty, gameLoopState);
+    }
 
     // Register movement handlers only in player mode
     if (!this.demoSequence?.length) {
