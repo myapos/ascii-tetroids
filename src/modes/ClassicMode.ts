@@ -179,6 +179,182 @@ export class ClassicMode implements IGameMode {
     this.soundManager.play("gameLoss");
   }
 
+  private registerPlayListener(
+    gameState: GameState,
+    difficulty: IDifficultyLevel,
+    gameLoopState: {
+      keyQueue: UserMove[];
+      lastGravityTime: number;
+      hasRested: boolean;
+      newShapeIdx: number;
+      gameOverHandled: boolean;
+      needsRender: boolean;
+    }
+  ): void {
+    this.modeLifecycle.registerListener("play", () => {
+      // Only respond to play when game is NOT active (i.e., game is over)
+      // This prevents unwanted menu flashes during transitions
+      if (gameState.isActive) {
+        return;
+      }
+
+      // Debounce: prevent showing menu multiple times within 500ms
+      const now = Date.now();
+      if (now - this.lastMenuTime < 500) {
+        return;
+      }
+      this.lastMenuTime = now;
+
+      // Prevent showing menu multiple times simultaneously
+      if (this.isShowingDifficultyMenu) {
+        return;
+      }
+
+      // Only show menu if we haven't already selected difficulty for this session
+      if (this.selectedDifficulty !== null) {
+        return;
+      }
+
+      // Mark that we're showing the menu
+      this.isShowingDifficultyMenu = true;
+
+      // Show difficulty selection menu
+      this.showDifficultyMenuSync()
+        .then((selectedDifficulty) => {
+          this.selectedDifficulty = selectedDifficulty;
+
+          // Update difficulty reference
+          difficulty = selectedDifficulty;
+
+          // Reset game loop state for fresh start
+          this.resetGameLoopState(gameState, difficulty, gameLoopState);
+
+          // Enable movement input handlers for player mode
+          this.registerMovementHandlers(gameState, gameLoopState);
+
+          this.clearFooter();
+        })
+        .catch((err) => {
+          console.error("DEBUG: Error in difficulty selection:", err);
+        })
+        .finally(() => {
+          // Mark that menu is no longer showing
+          this.isShowingDifficultyMenu = false;
+        });
+    });
+  }
+
+  private registerPauseListener(
+    gameState: GameState,
+    gameLoopState: {
+      keyQueue: UserMove[];
+      lastGravityTime: number;
+      hasRested: boolean;
+      newShapeIdx: number;
+      gameOverHandled: boolean;
+      needsRender: boolean;
+    }
+  ): void {
+    this.modeLifecycle.registerListener("pause", () => {
+      // Ignore pause after game over
+      if (!gameState.isActive) return;
+
+      gameState.isPaused = !gameState.isPaused;
+      if (gameState.isPaused) {
+        Terminal.write(
+          Terminal.colorizeText("GAME PAUSED - Press 'space' to resume\n")
+        );
+      } else {
+        Terminal.clearPreviousLine();
+        gameLoopState.needsRender = true;
+      }
+    });
+  }
+
+  private registerPlayAgainListener(
+    gameState: GameState,
+    difficulty: IDifficultyLevel,
+    gameLoopState: {
+      keyQueue: UserMove[];
+      lastGravityTime: number;
+      hasRested: boolean;
+      newShapeIdx: number;
+      gameOverHandled: boolean;
+      needsRender: boolean;
+    }
+  ): void {
+    this.modeLifecycle.registerListener("play-again", () => {
+      if (!gameState.isActive) {
+        const now = Date.now();
+        if (now - this.lastMenuTime < 500) {
+          return;
+        }
+        this.lastMenuTime = now;
+
+        this.showDifficultyMenuSync()
+          .then((selectedDifficulty) => {
+            difficulty = selectedDifficulty;
+            this.resetGameLoopState(gameState, difficulty, gameLoopState);
+          })
+          .catch((err) => {
+            console.error(
+              "DEBUG: Error in difficulty selection (play-again):",
+              err
+            );
+          });
+      }
+    });
+  }
+
+  private registerRotateListener(
+    gameState: GameState,
+    gameLoopState: {
+      keyQueue: UserMove[];
+      lastGravityTime: number;
+      hasRested: boolean;
+      newShapeIdx: number;
+      gameOverHandled: boolean;
+      needsRender: boolean;
+    }
+  ): void {
+    const MAX_QUEUE_SIZE = 2000;
+
+    if (this.rotateListener) {
+      this.inputHandler.off("rotate", this.rotateListener);
+    }
+
+    this.rotateListener = () => {
+      if (
+        gameState.isActive &&
+        gameLoopState.keyQueue.length < MAX_QUEUE_SIZE &&
+        !this.isInDemoMode
+      ) {
+        gameLoopState.keyQueue.push("rotate");
+        this.beep();
+      }
+    };
+    this.modeLifecycle.registerListener("rotate", this.rotateListener);
+  }
+
+  private registerQuitListener(gameState: GameState): void {
+    this.modeLifecycle.registerListener("quit", () => {
+      gameState.isActive = false;
+      this.backgroundMusic.stop();
+      this.renderer.exitGame();
+      process.exit(0);
+    });
+  }
+
+  private registerVolumeListeners(): void {
+    this.modeLifecycle.registerListener("volume-up", () => {
+      this.increaseVolume();
+    });
+
+    this.modeLifecycle.registerListener("volume-down", () => {
+      this.decreaseVolume();
+    });
+  }
+
   private showDifficultyMenuSync(): Promise<IDifficultyLevel> {
     Terminal.write(
       Terminal.colorizeText(
@@ -284,148 +460,16 @@ export class ClassicMode implements IGameMode {
       this.registerMovementHandlers(gameState, gameLoopState);
     }
 
-    if (this.rotateListener) {
-      this.inputHandler.off("rotate", this.rotateListener);
-    }
-
-    this.rotateListener = () => {
-      if (
-        gameState.isActive &&
-        gameLoopState.keyQueue.length < MAX_QUEUE_SIZE &&
-        !this.isInDemoMode
-      ) {
-        gameLoopState.keyQueue.push("rotate");
-        this.beep();
-      }
-    };
-    this.modeLifecycle.registerListener("rotate", this.rotateListener);
-
-    this.modeLifecycle.registerListener("play-again", () => {
-      if (!gameState.isActive) {
-        const now = Date.now();
-        if (now - this.lastMenuTime < 500) {
-          return;
-        }
-        this.lastMenuTime = now;
-
-        this.showDifficultyMenuSync()
-          .then((selectedDifficulty) => {
-            difficulty = selectedDifficulty;
-            this.resetGameLoopState(gameState, difficulty, gameLoopState);
-          })
-          .catch((err) => {
-            console.error(
-              "DEBUG: Error in difficulty selection (play-again):",
-              err
-            );
-          });
-      }
-    });
+    this.registerPlayAgainListener(gameState, difficulty, gameLoopState);
 
     if (!this.isInDemoMode) {
-      this.modeLifecycle.registerListener("play", () => {
-        // Only respond to play when game is NOT active (i.e., game is over)
-        // This prevents unwanted menu flashes during transitions
-        if (gameState.isActive) {
-          return;
-        }
-
-        // Debounce: prevent showing menu multiple times within 500ms
-        const now = Date.now();
-        if (now - this.lastMenuTime < 500) {
-          return;
-        }
-        this.lastMenuTime = now;
-
-        // Prevent showing menu multiple times simultaneously
-        if (this.isShowingDifficultyMenu) {
-          return;
-        }
-
-        // Only show menu if we haven't already selected difficulty for this session
-        if (this.selectedDifficulty !== null) {
-          return;
-        }
-
-        // Mark that we're showing the menu
-        this.isShowingDifficultyMenu = true;
-
-        // Show difficulty selection menu
-        this.showDifficultyMenuSync()
-          .then((selectedDifficulty) => {
-            this.selectedDifficulty = selectedDifficulty;
-
-            // Update difficulty reference
-            difficulty = selectedDifficulty;
-
-            // Reset game loop state for fresh start
-            this.resetGameLoopState(gameState, difficulty, gameLoopState);
-
-            // Enable movement input handlers for player mode
-            this.registerMovementHandlers(gameState, gameLoopState);
-
-            // Register pause handler now that we're in player mode
-            this.modeLifecycle.registerListener("pause", () => {
-              // Ignore pause after game over
-              if (!gameState.isActive) return;
-
-              gameState.isPaused = !gameState.isPaused;
-              if (gameState.isPaused) {
-                Terminal.write(
-                  Terminal.colorizeText(
-                    "GAME PAUSED - Press 'space' to resume\n"
-                  )
-                );
-              } else {
-                Terminal.clearPreviousLine();
-                gameLoopState.needsRender = true;
-              }
-            });
-
-            this.clearFooter();
-          })
-          .catch((err) => {
-            console.error("DEBUG: Error in difficulty selection:", err);
-          })
-          .finally(() => {
-            // Mark that menu is no longer showing
-            this.isShowingDifficultyMenu = false;
-          });
-      });
+      this.registerPlayListener(gameState, difficulty, gameLoopState);
+      this.registerPauseListener(gameState, gameLoopState);
     }
 
-    // Setup control handlers - pause enabled only in player mode
-    if (!this.isInDemoMode) {
-      this.modeLifecycle.registerListener("pause", () => {
-        // Ignore pause after game over
-        if (!gameState.isActive) return;
-
-        gameState.isPaused = !gameState.isPaused;
-        if (gameState.isPaused) {
-          Terminal.write(
-            Terminal.colorizeText("GAME PAUSED - Press 'space' to resume\n")
-          );
-        } else {
-          Terminal.clearPreviousLine();
-          gameLoopState.needsRender = true;
-        }
-      });
-    }
-
-    this.modeLifecycle.registerListener("quit", () => {
-      gameState.isActive = false;
-      this.backgroundMusic.stop();
-      this.renderer.exitGame();
-      process.exit(0);
-    });
-
-    this.modeLifecycle.registerListener("volume-up", () => {
-      this.increaseVolume();
-    });
-
-    this.modeLifecycle.registerListener("volume-down", () => {
-      this.decreaseVolume();
-    });
+    this.registerRotateListener(gameState, gameLoopState);
+    this.registerQuitListener(gameState);
+    this.registerVolumeListeners();
 
     // Start input handler AFTER all listeners are registered
     this.inputHandler.start();
