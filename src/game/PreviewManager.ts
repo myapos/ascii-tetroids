@@ -2,6 +2,7 @@ import type { Chamber } from "src/types";
 import type { IDifficultyLevel } from "src/difficulty/DifficultyLevel";
 import {
   PREVIEW,
+  PREVIEW_SHAPE,
   LIVE,
   PREVIEW_COLS,
   MAX_CHAMBER_HEIGHT,
@@ -37,6 +38,16 @@ export class PreviewManager {
 
     // Clone the shape to avoid mutating the cached original
     const shape = clone(getShapes().get(shapeIdx)!);
+
+    // Replace LIVE with PREVIEW_SHAPE for display in preview
+    for (let i = 0; i < shape.length; i++) {
+      for (let j = 0; j < shape[i].length; j++) {
+        if (shape[i][j] === LIVE) {
+          shape[i][j] = PREVIEW_SHAPE;
+        }
+      }
+    }
+
     this.emptyPreviewArea(previewChamber);
 
     // add a row with the word 'NEXT'
@@ -181,6 +192,7 @@ export class PreviewManager {
 
         if (typeof shapeChar !== "undefined") {
           previewChamber[i][j] =
+            shapeChar === PREVIEW_SHAPE ||
             shapeChar === LIVE ||
             NEXT_WORD.includes(shapeChar) ||
             LEVEL_WORD.includes(shapeChar) ||

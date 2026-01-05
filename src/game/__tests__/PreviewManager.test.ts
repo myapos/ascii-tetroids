@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { PreviewManager } from "src/game/PreviewManager";
 import {
   PREVIEW,
+  PREVIEW_SHAPE,
   LIVE,
   MAX_CHAMBER_HEIGHT,
   PREVIEW_COLS,
@@ -105,7 +106,7 @@ describe("PreviewManager", () => {
       let hasShapeCells = false;
       for (let i = 0; i < updated.length; i++) {
         for (let j = 0; j < updated[i].length; j++) {
-          if (updated[i][j] === LIVE) {
+          if (updated[i][j] === PREVIEW_SHAPE) {
             hasShapeCells = true;
             break;
           }
@@ -143,18 +144,18 @@ describe("PreviewManager", () => {
       const result1 = PreviewManager.addPreviewNextShape(0, chamber1, 1);
       const result2 = PreviewManager.addPreviewNextShape(1, chamber2, 1);
 
-      // Count live cells in each preview
+      // Count shape cells in each preview
       let count1 = 0;
       let count2 = 0;
 
       for (let i = 0; i < result1.length; i++) {
         for (let j = 0; j < result1[0].length; j++) {
-          if (result1[i][j] === LIVE) count1++;
-          if (result2[i][j] === LIVE) count2++;
+          if (result1[i][j] === PREVIEW_SHAPE) count1++;
+          if (result2[i][j] === PREVIEW_SHAPE) count2++;
         }
       }
 
-      // Different shapes should have different number of live cells
+      // Different shapes should have different number of shape cells
       // (though some might coincidentally match)
       expect(count1).toBeGreaterThan(0);
       expect(count2).toBeGreaterThan(0);
@@ -166,11 +167,11 @@ describe("PreviewManager", () => {
       const chamber = PreviewManager.initializeChamber();
       const updated = PreviewManager.addPreviewNextShape(3, chamber, 1); // vertical line
 
-      // Find leftmost live cell
+      // Find leftmost shape cell
       let leftmostCol = PREVIEW_COLS;
       for (let i = 0; i < updated.length; i++) {
         for (let j = 0; j < updated[0].length; j++) {
-          if (updated[i][j] === LIVE) {
+          if (updated[i][j] === PREVIEW_SHAPE) {
             leftmostCol = Math.min(leftmostCol, j);
           }
         }
