@@ -1,5 +1,5 @@
 export const LIVE = "●";
-export const REST = "■";
+export const REST = "◉";
 export const FLOOR = "━";
 export const SIDE_WALL = "║";
 export const EMPTY = "○"; // Filled black circle for visibility
