@@ -71,7 +71,250 @@ Use the keyboard controls to move and rotate pieces:
 
 Complete rows to clear them and increase your score. The game ends when pieces stack to the top of the board.
 
-## Audio System
+## Architecture Overview
+
+This project uses the **Mediator Pattern** to decouple game modes and manage state transitions cleanly. The architecture is organized into distinct layers with clear separation of concerns.
+
+### Project Structure
+
+```
+src/
+├── GameApplication.ts          # Application entry point, mode orchestration
+├── mainEngine.ts               # Legacy game engine
+├── index.ts                    # CLI entry point
+├── inputSample.txt             # Sample input file
+├── types.ts                    # Shared type definitions
+│
+├── domain/                     # Core game domain
+│   └── GameState.ts           # Game state interface and class
+│
+├── game/                       # Game logic layer
+│   ├── Game.ts                # Game singleton, manages renderer/logic
+│   ├── GameLogic.ts           # Core game rules (move, rotate, collide, etc.)
+│   ├── PreviewManager.ts      # Next piece preview chamber
+│   └── __tests__/             # Game logic tests
+│
+├── modes/                     # Game mode implementations (Mediator Pattern)
+│   ├── IGameMode.ts           # Interface that all modes implement
+│   ├── DemoMode.ts            # Splash screen + demo gameplay
+│   ├── ClassicMode.ts         # Player-controlled game mode
+│   ├── splashScreenConfig.ts  # Splash screen ASCII art
+│   ├── demoFooterConfig.ts    # Demo mode footer display
+│   └── __tests__/             # Mode-specific tests
+│
+├── state/                     # State management (Mediator Pattern)
+│   ├── GameStateMediator.ts   # Centralized game state and phase tracking
+│   └── ModeContext.ts         # Per-mode resource and listener management
+│
+├── rendering/                 # Terminal rendering layer
+│   ├── Renderer.ts            # Game frame renderer
+│   ├── Terminal.ts            # ANSI escape sequence wrappers
+│   └── (uses alternate screen buffer for flicker-free rendering)
+│
+├── input/                      # Input handling layer
+│   ├── InputHandler.ts        # Raw input event emission and listener management
+│   └── __tests__/             # Input tests
+│
+├── audio/                     # Cross-platform audio system
+│   ├── SoundManager.ts        # Sound effect playback (debounced)
+│   ├── BackgroundMusic.ts     # Background music singleton
+│   └── sounds/                # Audio assets (.wav files)
+│
+├── shapes/                    # Tetroids piece definitions
+│   ├── createShapes.ts        # Shape factory
+│   ├── leftL.ts, rightL.ts    # L-shaped pieces
+│   ├── leftSigma.ts           # Left zigzag (S)
+│   ├── rightSigma.ts          # Right zigzag (Z)
+│   ├── square.ts              # O-shaped piece
+│   ├── T.ts                   # T-shaped piece
+│   ├── verticalLine.ts        # I-shaped piece
+│   └── __tests__/             # Shape tests
+│
+├── difficulty/                # Difficulty level definitions
+│   └── DifficultyLevel.ts     # Easy, Normal, Hard difficulty classes
+│
+├── constants/                 # Game constants
+│   └── constants.ts           # Magic numbers, timeouts, chamber dimensions
+│
+└── utils/                     # Utility functions
+    ├── clone.ts               # Deep clone chambers
+    ├── debounce.ts            # Debounce function wrapper
+    ├── isInBounds.ts          # Boundary checking
+    ├── readFile.ts            # File I/O utilities
+    ├── readMovements.ts       # Read demo movements from file
+    ├── rotateMatrix.ts        # 2D matrix rotation
+    ├── transposeMatrix.ts     # Matrix transpose
+    └── __tests__/             # Utility tests
+```
+
+### Architectural Patterns
+
+#### 1. **Mediator Pattern (Game State Management)**
+
+The `GameStateMediator` class serves as a single source of truth for game state, eliminating tight coupling between game modes.
+
+**Key Components:**
+
+- **GameStateMediator** (`src/state/GameStateMediator.ts`)
+  - Tracks game phase: `splash | demo | playing | game-over`
+  - Manages selected difficulty
+  - Tracks user initiation (P pressed from splash vs. auto-start)
+  - Provides event system for phase change notifications
+  - Singleton instance via `getGameStateMediator()`
+
+**Benefits:**
+
+- ✅ Modes communicate through mediator, not directly with each other
+- ✅ No callback chains or flag passing between modes
+- ✅ Central place to track game state
+- ✅ Easy to add new game phases
+
+**Example Usage:**
+
+```typescript
+const mediator = getGameStateMediator();
+mediator.setPhase("playing"); // Update phase
+mediator.setSelectedDifficulty(hard); // Store selection
+const phase = mediator.getCurrentPhase(); // Query state
+```
+
+#### 2. **Mode Context Pattern (Resource Management)**
+
+The `ModeContext` class manages per-mode resources and automatically cleans up listeners to prevent accumulation.
+
+**Key Components:**
+
+- **ModeContext** (`src/state/ModeContext.ts`)
+  - Tracks all listeners registered by a mode
+  - Provides `registerListener()` method for automatic cleanup tracking
+  - Cleanup all listeners with single `cleanup()` call
+  - Prevents listener leaks and memory accumulation
+
+**Benefits:**
+
+- ✅ Automatic listener tracking and cleanup
+- ✅ No orphaned event handlers
+- ✅ Clean mode transitions
+- ✅ Easy to debug listener count
+
+**Example Usage:**
+
+```typescript
+const context = new ModeContext(inputHandler);
+context.registerListener("play", handlePlay); // Tracked for cleanup
+context.cleanup(); // Remove all listeners
+```
+
+#### 3. **Singleton Patterns**
+
+Several components use the singleton pattern for global state:
+
+- **Game** (`src/game/Game.ts`) - Single game instance with shared GameState
+- **GameStateMediator** (`src/state/GameStateMediator.ts`) - Single mediator for all modes
+- **BackgroundMusic** (`src/audio/BackgroundMusic.ts`) - Single audio instance across modes
+
+#### 4. **Factory Pattern**
+
+- **createShapes()** (`src/shapes/createShapes.ts`) - Creates all 7 Tetris piece types
+- **Difficulty Classes** (`src/difficulty/DifficultyLevel.ts`) - Easy/Normal/Hard difficulty objects
+
+### Data Flow
+
+```
+User Input
+    ↓
+InputHandler (emits events)
+    ↓
+ModeContext.registerListener() (tracks listener)
+    ↓
+Mode Handler (DemoMode or ClassicMode)
+    ↓
+GameStateMediator.setPhase() (update state)
+    ↓
+Other modes detect phase change via mediator
+    ↓
+Mode exits, ModeContext.cleanup() removes all listeners
+```
+
+### Mode Transitions
+
+```
+┌─────────────────────────────────┐
+│   GameApplication (Orchestrator) │
+└─────────────────────────────────┘
+          ↓
+    ┌──────────────┐
+    │  DemoMode    │
+    │              │
+    │ • Splash     │
+    │ • Demo play  │
+    └──────────────┘
+          ↓
+    User presses P
+          ↓
+    Mediator: splash → demo → playing
+          ↓
+    ┌──────────────┐
+    │ ClassicMode  │
+    │              │
+    │ • Player mode│
+    └──────────────┘
+          ↓
+    Game over or user quit
+          ↓
+    ModeContext.cleanup()
+    Back to DemoMode
+```
+
+### Game State Lifecycle
+
+1. **Splash Phase** (`splash`)
+
+   - Displays splash screen with instructions
+   - Waits 10 seconds for user to press P
+   - If timeout → transitions to demo
+   - If P pressed → transitions to playing
+
+2. **Demo Phase** (`demo`)
+
+   - Plays pre-recorded move sequence
+   - Displays "Press P to play" footer
+   - If P pressed → transitions to playing
+   - If auto-restart → stays in demo
+
+3. **Playing Phase** (`playing`)
+
+   - User controls piece movement
+   - Tracks score and level
+   - On game over → waits for R (restart) or Q (quit)
+   - Can press P to pause/unpause
+
+4. **Game Over**
+   - Shows "YOU LOST!!" message
+   - User can press R to go back to difficulty selection
+   - Or Q to quit
+
+### Key Design Decisions
+
+| Decision                    | Reason                                                 |
+| --------------------------- | ------------------------------------------------------ |
+| **Mediator Pattern**        | Decouples modes from knowing about each other          |
+| **ModeContext**             | Prevents listener accumulation between mode switches   |
+| **Singleton Game State**    | Shared state across all modes (chambers, score, level) |
+| **Alternate Screen Buffer** | Prevents frame flicker and terminal scrolling issues   |
+| **Event-Driven Input**      | Decouples input handling from game logic               |
+| **Difficulty Classes**      | Easy to extend with new difficulty levels              |
+| **Cross-Platform Audio**    | Works on Linux, macOS, Windows without dependencies    |
+
+### Extension Points
+
+To add a new game mode:
+
+1. Create `src/modes/NewMode.ts` implementing `IGameMode`
+2. Use `ModeContext` for listener tracking
+3. Query `GameStateMediator` for state
+4. Call `mediator.setPhase()` to signal transitions
+5. Update `GameApplication.ts` to route to new mode
 
 The game features a complete cross-platform audio system with sound effects and background music.
 
