@@ -11,6 +11,7 @@ import {
   SIDE_WALL,
   EMPTY,
   PREVIEW,
+  PREVIEW_SHAPE,
 } from "src/constants/constants";
 
 export class Terminal {
@@ -96,7 +97,9 @@ export class Terminal {
 
     switch (cell) {
       case LIVE:
-        return chalk.greenBright(cell);
+        return chalk.yellowBright(cell);
+      case PREVIEW_SHAPE:
+        return chalk.yellowBright(cell);
       case REST:
         return chalk.white(cell);
       case FLOOR:
