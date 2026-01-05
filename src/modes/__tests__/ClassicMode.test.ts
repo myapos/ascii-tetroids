@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { ClassicMode } from "../ClassicMode";
 import { GameLogic } from "src/game/GameLogic";
 import { Renderer } from "src/rendering/Renderer";
@@ -32,6 +32,10 @@ describe("ClassicMode", () => {
     vi.spyOn(inputHandler, "start").mockImplementation(() => {
       throw new Error("Stop execution");
     });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   describe("initialization", () => {
@@ -143,58 +147,53 @@ describe("ClassicMode", () => {
       expect(classicMode).toBeDefined();
     });
 
-    it("ignores play (P) key when game is already active", async () => {
-      vi.useFakeTimers();
-      try {
-        // Create ClassicMode in player mode (no demoSequence)
-        // Demo mode no longer registers play handler - mediator handles state transitions
-        classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
+    it("ignores play (P) key when game is already active", () => {
+      // Create ClassicMode in player mode (no demoSequence)
+      // Demo mode no longer registers play handler - mediator handles state transitions
+      classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
 
-        const gameState = {
-          isActive: true,
-          isPaused: false,
-          chamber: gameLogic.initializeChamber(),
-          previewChamber: gameLogic.initializeChamber(),
-          level: 1,
-          score: 0,
-          totalFilledRows: 0,
-          gravitySpeed: 800,
-          reset: vi.fn(),
-        };
+      const gameState = {
+        isActive: true,
+        isPaused: false,
+        chamber: gameLogic.initializeChamber(),
+        previewChamber: gameLogic.initializeChamber(),
+        level: 1,
+        score: 0,
+        totalFilledRows: 0,
+        gravitySpeed: 800,
+        reset: vi.fn(),
+      };
 
-        const mockDifficulty = {
-          getInitialGravitySpeed: () => 800,
-          getLevelLinesRequired: () => 20,
-          getGravitySpeedIncrement: () => 50,
-          getMaximumSpeed: () => 100,
-        };
+      const mockDifficulty = {
+        getInitialGravitySpeed: () => 800,
+        getLevelLinesRequired: () => 20,
+        getGravitySpeedIncrement: () => 50,
+        getMaximumSpeed: () => 100,
+        getName: () => "Normal",
+      };
 
-        // Start play but stop it before game loop
-        classicMode.play(gameState, mockDifficulty).catch(() => {});
-        await vi.advanceTimersByTimeAsync(50);
+      // Start play but stop it before game loop
+      classicMode.play(gameState, mockDifficulty).catch(() => {});
 
-        // Verify play handler was registered (player mode only)
-        expect(handlers.has("play")).toBe(true);
+      // Verify play handler was registered (player mode only)
+      expect(handlers.has("play")).toBe(true);
 
-        // Call the play handler while game is active
-        // Handler should return early without calling reset again
-        const playHandler = handlers.get("play")!;
-        const initialResetCount = (gameState.reset as any).mock.calls.length;
-        playHandler({
-          type: "play",
-          timestamp: Date.now(),
-        });
+      // Call the play handler while game is active
+      // Handler should return early without calling reset again
+      const playHandler = handlers.get("play")!;
+      const initialResetCount = (gameState.reset as any).mock.calls.length;
+      playHandler({
+        type: "play",
+        timestamp: Date.now(),
+      });
 
-        // Reset should NOT be called again by the handler because gameState.isActive is true
-        // Handler early-returns when game is active
-        const finalResetCount = (gameState.reset as any).mock.calls.length;
-        expect(finalResetCount).toBe(initialResetCount);
-      } finally {
-        vi.useRealTimers();
-      }
+      // Reset should NOT be called again by the handler because gameState.isActive is true
+      // Handler early-returns when game is active
+      const finalResetCount = (gameState.reset as any).mock.calls.length;
+      expect(finalResetCount).toBe(initialResetCount);
     });
 
-    it("registers play handler in player mode for game restart", async () => {
+    it("registers play handler in player mode for game restart", () => {
       // Create ClassicMode in player mode (no demoSequence)
       classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
 
@@ -215,11 +214,11 @@ describe("ClassicMode", () => {
         getLevelLinesRequired: () => 20,
         getGravitySpeedIncrement: () => 50,
         getMaximumSpeed: () => 100,
+        getName: () => "Normal",
       };
 
       // Start play but stop it before game loop
       classicMode.play(gameState, mockDifficulty).catch(() => {});
-      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // In player mode, play handler IS registered (for restarting after game over)
       expect(handlers.has("play")).toBe(true);
@@ -237,15 +236,17 @@ describe("ClassicMode", () => {
         hasRested: false,
         newShapeIdx: Math.floor(Math.random() * gameLogic.getShapes().size),
         gameOverHandled: false,
+        needsRender: false,
       };
 
-      // Verify all 5 properties exist
-      expect(Object.keys(gameLoopState)).toHaveLength(5);
+      // Verify all 6 properties exist
+      expect(Object.keys(gameLoopState)).toHaveLength(6);
       expect(gameLoopState).toHaveProperty("keyQueue");
       expect(gameLoopState).toHaveProperty("lastGravityTime");
       expect(gameLoopState).toHaveProperty("hasRested");
       expect(gameLoopState).toHaveProperty("newShapeIdx");
       expect(gameLoopState).toHaveProperty("gameOverHandled");
+      expect(gameLoopState).toHaveProperty("needsRender");
     });
 
     it("key queue accumulates and clears moves", () => {
