@@ -147,6 +147,60 @@ src/
     └── __tests__/             # Utility tests
 ```
 
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          GameApplication                                │
+│                       (Entry Point, DI Container)                       │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                ┌───────────────────┼───────────────────┐
+                │                   │                   │
+                ▼                   ▼                   ▼
+        ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐
+        │  GameLogic   │   │  Renderer    │   │  InputHandler    │
+        │ (Game Rules) │   │  (Terminal)  │   │  (Event Emitter) │
+        └──────────────┘   └──────────────┘   └──────────────────┘
+                │                   │                   │
+                └───────────────────┼───────────────────┘
+                                    │
+                                    ▼
+                        ┌─────────────────────┐
+                        │  Game Container     │
+                        │  (Orchestrator)     │
+                        └─────────────────────┘
+                                    │
+                ┌───────────────────┼───────────────────┐
+                │                   │                   │
+                ▼                   ▼                   ▼
+        ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐
+        │  DemoMode   │    │ ClassicMode │    │GameStateMediator│
+        │ (Strategy)  │    │ (Strategy)  │    │   (Singleton)   │
+        └─────────────┘    └─────────────┘    └─────────────────┘
+                │                   │                   ▲
+                │                   │                   │
+                ▼                   ▼                   │
+        ┌─────────────────────────────────────────────────┐
+        │        ModeLifecycle (Per-Mode)                 │
+        │   - registerListener(event, handler)            │
+        │   - cleanup() on mode exit                      │
+        └─────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌─────────────────────────────────────────────────┐
+        │           Audio System                          │
+        │  - SoundManager (effects)                       │
+        │  - BackgroundMusic (singleton)                  │
+        └─────────────────────────────────────────────────┘
+
+
+Legend:
+  → Dependency flow (top-down injection)
+  ↑ State queries/updates
+  ● Singleton pattern
+```
+
 ### Architectural Patterns
 
 #### 1. **Dependency Injection (Application Layer)**
