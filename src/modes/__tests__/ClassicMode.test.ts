@@ -3,6 +3,10 @@ import { ClassicMode } from "../ClassicMode";
 import { GameLogic } from "src/game/GameLogic";
 import { Renderer } from "src/rendering/Renderer";
 import { InputHandler } from "src/input/InputHandler";
+import {
+  getGameStateMediator,
+  resetGameStateMediator,
+} from "src/state/GameStateMediator";
 import type { InputEvent } from "src/input/InputHandler";
 import type { UserMove } from "src/types";
 
@@ -14,6 +18,7 @@ describe("ClassicMode", () => {
   let handlers: Map<string, (event: InputEvent) => void>;
 
   beforeEach(() => {
+    resetGameStateMediator();
     gameLogic = new GameLogic();
     renderer = new Renderer();
     inputHandler = new InputHandler();
@@ -36,6 +41,7 @@ describe("ClassicMode", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    resetGameStateMediator();
   });
 
   describe("initialization", () => {
@@ -121,11 +127,13 @@ describe("ClassicMode", () => {
     });
 
     it("demo mode created with demoSequence", () => {
+      const mediator = getGameStateMediator();
       const demoSequence: UserMove[] = ["<", ">", "rotate"];
       classicMode = new ClassicMode(
         gameLogic,
         renderer,
         inputHandler,
+        mediator,
         demoSequence
       );
       expect(classicMode).toBeDefined();
@@ -135,11 +143,13 @@ describe("ClassicMode", () => {
     });
 
     it("transition from demo to player mode is possible", () => {
+      const mediator = getGameStateMediator();
       const demoSequence: UserMove[] = ["<", ">", "rotate"];
       classicMode = new ClassicMode(
         gameLogic,
         renderer,
         inputHandler,
+        mediator,
         demoSequence
       );
       // When play event fires, ClassicMode registers movement handlers
@@ -150,7 +160,13 @@ describe("ClassicMode", () => {
     it("ignores play (P) key when game is already active", () => {
       // Create ClassicMode in player mode (no demoSequence)
       // Demo mode no longer registers play handler - mediator handles state transitions
-      classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
+      const mediator = getGameStateMediator();
+      classicMode = new ClassicMode(
+        gameLogic,
+        renderer,
+        inputHandler,
+        mediator
+      );
 
       const gameState = {
         isActive: true,
@@ -195,7 +211,13 @@ describe("ClassicMode", () => {
 
     it("registers play handler in player mode for game restart", () => {
       // Create ClassicMode in player mode (no demoSequence)
-      classicMode = new ClassicMode(gameLogic, renderer, inputHandler);
+      const mediator = getGameStateMediator();
+      classicMode = new ClassicMode(
+        gameLogic,
+        renderer,
+        inputHandler,
+        mediator
+      );
 
       const gameState = {
         isActive: false, // Game is NOT active (game over state)

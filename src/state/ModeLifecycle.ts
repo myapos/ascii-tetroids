@@ -10,17 +10,18 @@ export interface ListenerRegistration {
 }
 
 /**
- * Manages mode-specific state and resources
- * Automatically tracks all listeners and resources for cleanup
+ * Manages mode lifecycle - setup and cleanup of resources
+ * Automatically tracks all listeners for guaranteed cleanup
+ * Similar to React/Vue onMount/onUnmount lifecycle hooks
  */
-export class ModeContext {
+export class ModeLifecycle {
   private listeners: ListenerRegistration[] = [];
   private isActive = false;
 
   constructor(private inputHandler: InputHandler) {}
 
   /**
-   * Register an event listener and track it for cleanup
+   * Register an event listener and track it for automatic cleanup
    */
   registerListener(
     eventType: InputEventType,
@@ -31,7 +32,15 @@ export class ModeContext {
   }
 
   /**
-   * Clean up all registered listeners
+   * Activate the lifecycle (onMount)
+   */
+  activate(): void {
+    this.isActive = true;
+  }
+
+  /**
+   * Clean up all registered listeners (onUnmount)
+   * Should be called in finally block to guarantee execution
    */
   cleanup(): void {
     for (const listener of this.listeners) {
@@ -42,16 +51,9 @@ export class ModeContext {
   }
 
   /**
-   * Mark context as active
+   * Check if lifecycle is currently active
    */
-  activate(): void {
-    this.isActive = true;
-  }
-
-  /**
-   * Check if context is active
-   */
-  active(): boolean {
+  isRunning(): boolean {
     return this.isActive;
   }
 

@@ -6,11 +6,8 @@ import { InputHandler } from "src/input/InputHandler";
 import { PreviewManager } from "./PreviewManager";
 import type { IGameMode } from "src/modes/IGameMode";
 import type { IDifficultyLevel } from "src/difficulty/DifficultyLevel";
-import { NormalDifficulty } from "src/difficulty/DifficultyLevel";
 
 export class Game {
-  private static instance: Game;
-
   private gameState: GameState;
   private gameLogic: GameLogic;
   private renderer: Renderer;
@@ -18,11 +15,16 @@ export class Game {
   private difficulty: IDifficultyLevel;
   private gameMode!: IGameMode;
 
-  private constructor() {
-    this.gameLogic = new GameLogic();
-    this.renderer = new Renderer();
-    this.inputHandler = new InputHandler();
-    this.difficulty = new NormalDifficulty();
+  constructor(
+    gameLogic: GameLogic,
+    renderer: Renderer,
+    inputHandler: InputHandler,
+    difficulty: IDifficultyLevel
+  ) {
+    this.gameLogic = gameLogic;
+    this.renderer = renderer;
+    this.inputHandler = inputHandler;
+    this.difficulty = difficulty;
 
     // Initialize game state with default chambers
     const initialChamber = this.createChamber();
@@ -33,13 +35,6 @@ export class Game {
       initialPreviewChamber,
       this.difficulty.getInitialGravitySpeed()
     );
-  }
-
-  static getInstance(): Game {
-    if (!Game.instance) {
-      Game.instance = new Game();
-    }
-    return Game.instance;
   }
 
   private createChamber(): Chamber {
