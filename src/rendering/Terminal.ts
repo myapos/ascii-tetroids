@@ -89,8 +89,8 @@ export class Terminal {
       return chalk.cyan(cell);
     }
 
-    // All preview text and labels (letters, colon, double quote) in yellowBright
-    if (/[A-Za-z:"' ⟳]/.test(cell)) {
+    // All preview text and labels (letters, double quote) in yellowBright
+    if (/[A-Za-z"' ⟳]/.test(cell)) {
       return chalk.yellowBright(cell);
     }
 
