@@ -719,4 +719,7 @@ This approach provides:
 - [x] add auto mode
 - [x] add music
 - [x] instructions for pausing in preview
-- [ ] deb packaging
+- [x] packaging
+  - [x] debian
+  - [x] windows
+  - [x] unix/macos

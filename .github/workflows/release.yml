@@ -35,9 +35,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ascii-tetroids_${{ github.ref_name }}.deb
-            ascii-tetroids_${{ github.ref_name }}.tar.gz
-            ascii-tetroids_${{ github.ref_name }}.zip
+            ascii-tetroids_debian_${{ github.ref_name }}.deb
+            ascii-tetroids_unix_macos_${{ github.ref_name }}.tar.gz
+            ascii-tetroids_windows_${{ github.ref_name }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -46,6 +46,6 @@ jobs:
         with:
           name: ascii-tetroids
           path: |
-            ascii-tetroids_${{ github.ref_name }}.deb
-            ascii-tetroids_${{ github.ref_name }}.tar.gz
-            ascii-tetroids_${{ github.ref_name }}.zip
+            ascii-tetroids_debian_${{ github.ref_name }}.deb
+            ascii-tetroids_unix_macos_${{ github.ref_name }}.tar.gz
+            ascii-tetroids_windows_${{ github.ref_name }}.zip
