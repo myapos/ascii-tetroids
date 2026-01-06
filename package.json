@@ -1,7 +1,7 @@
 {
   "name": "ascii-tetroids",
   "module": "index-new.ts",
-  "version": "0.0.92-all-v3",
+  "version": "0.0.92-all-v4",
   "type": "module",
   "license": "MIT",
   "bin": "dist/index-new.js",
