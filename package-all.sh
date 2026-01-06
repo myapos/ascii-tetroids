@@ -14,13 +14,13 @@ DESCRIPTION="ASCII Tetroids game written in Node.js"
 
 BUILD_DIR="dist"
 DEB_BUILD_DIR="deb-build"
-DEB_FILE_NAME="${PACKAGE_NAME}_${PACKAGE_VERSION}.deb"
+DEB_FILE_NAME="${PACKAGE_NAME}_debian_${PACKAGE_VERSION}.deb"
 
 TAR_DIR="tar-build"
-TAR_FILE_NAME="${PACKAGE_NAME}_${PACKAGE_VERSION}.tar.gz"
+TAR_FILE_NAME="${PACKAGE_NAME}_unix_${PACKAGE_VERSION}.tar.gz" 
 
 ZIP_DIR="zip-build"
-ZIP_FILE_NAME="${PACKAGE_NAME}_${PACKAGE_VERSION}.zip"
+ZIP_FILE_NAME="${PACKAGE_NAME}_windows_${PACKAGE_VERSION}.zip"
 
 # 1 Clean previous build
 echo "Cleaning previous deb package..."
@@ -29,7 +29,7 @@ mkdir -p $DEB_BUILD_DIR
 
 # 2 Build project
 echo "Building project..."
-npm run package:deb
+npm run build
 
 # 3 Create deb folder structure
 echo "Creating deb folder structure..."
