@@ -17,7 +17,7 @@ DEB_BUILD_DIR="deb-build"
 DEB_FILE_NAME="${PACKAGE_NAME}_debian_${PACKAGE_VERSION}.deb"
 
 TAR_DIR="tar-build"
-TAR_FILE_NAME="${PACKAGE_NAME}_unix_${PACKAGE_VERSION}.tar.gz" 
+TAR_FILE_NAME="${PACKAGE_NAME}_macos_${PACKAGE_VERSION}.tar.gz" 
 
 ZIP_DIR="zip-build"
 ZIP_FILE_NAME="${PACKAGE_NAME}_windows_${PACKAGE_VERSION}.zip"
