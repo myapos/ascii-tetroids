@@ -34,7 +34,7 @@ Use the keyboard controls to move and rotate pieces:
 | **→ Right Arrow** | Move piece right               |
 | **↑ Up Arrow**    | Rotate piece                   |
 | **↓ Down Arrow**  | Speed up gravity (drop faster) |
-| **P or Space**    | Pause/Resume game              |
+| **Space**         | Pause/Resume game              |
 | **R**             | Play again (after game over)   |
 | **+**             | Increase volume                |
 | **-**             | Decrease volume                |
