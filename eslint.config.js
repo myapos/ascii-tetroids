@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    ignores: ["dist", "node_modules", "deb-build"],
+    ignores: ["dist", "node_modules", "deb-build", "tar-build", "zip-build"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

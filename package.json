@@ -1,7 +1,7 @@
 {
   "name": "ascii-tetroids",
   "module": "index-new.ts",
-  "version": "0.0.91",
+  "version": "0.0.92-all-v1",
   "type": "module",
   "license": "MIT",
   "bin": "dist/index-new.js",
@@ -20,7 +20,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest",
-    "package:deb": "bash ./package-deb.sh"
+    "package:deb": "bash ./package-deb.sh",
+    "package:all": "bash ./package-all.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
