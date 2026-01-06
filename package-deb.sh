@@ -6,7 +6,8 @@ set -e
 # ================================
 
 PACKAGE_NAME="ascii-tetroids"
-PACKAGE_VERSION="1.0.0"
+# Read version from package.json
+PACKAGE_VERSION=$(node -p "require('./package.json').version")
 PACKAGE_ARCH="all"
 MAINTAINER="Myron Apostolakis <https://github.com/myapos>"
 DESCRIPTION="ASCII Tetroids game written in Node.js"
