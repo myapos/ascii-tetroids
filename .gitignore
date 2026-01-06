@@ -173,5 +173,8 @@ dist
 
 # Finder (MacOS) folder config
 .DS_Store
-deb-build
-ascii-tetroids.deb
+deb-build/
+packages/
+*.deb
+*.tar.gz
+*.zip
