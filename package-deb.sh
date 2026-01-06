@@ -14,7 +14,7 @@ DESCRIPTION="ASCII Tetroids game written in Node.js"
 
 BUILD_DIR="dist"
 DEB_BUILD_DIR="deb-build"
-DEB_FILE_NAME="ascii-tetroids.deb"
+DEB_FILE_NAME="${PACKAGE_NAME}_${PACKAGE_VERSION}.deb"
 
 # 1 Clean previous build
 echo "Cleaning previous deb package..."
