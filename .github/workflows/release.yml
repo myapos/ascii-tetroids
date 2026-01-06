@@ -4,12 +4,13 @@ on:
   push:
     tags:
       - "*.*.*"
+
 permissions:
   contents: write
   packages: write
 
 jobs:
-  build-deb:
+  build-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,12 +28,24 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Build .deb package
-        run: npm run package:deb
+      - name: Build all packages
+        run: npm run package:all
 
-      - name: Upload .deb to release
+      - name: Upload release artifacts
         uses: softprops/action-gh-release@v1
         with:
-          files: ascii-tetroids_${{ github.ref_name }}.deb
+          files: |
+            ascii-tetroids_${{ github.ref_name }}.deb
+            ascii-tetroids_${{ github.ref_name }}.tar.gz
+            ascii-tetroids_${{ github.ref_name }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ascii-tetroids
+          path: |
+            ascii-tetroids_${{ github.ref_name }}.deb
+            ascii-tetroids_${{ github.ref_name }}.tar.gz
+            ascii-tetroids_${{ github.ref_name }}.zip
