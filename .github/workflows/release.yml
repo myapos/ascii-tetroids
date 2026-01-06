@@ -36,7 +36,7 @@ jobs:
         with:
           files: |
             ascii-tetroids_debian_${{ github.ref_name }}.deb
-            ascii-tetroids_macos_${{ github.ref_name }}.tar.gz
+            ascii-tetroids_unix_macos__${{ github.ref_name }}.tar.gz
             ascii-tetroids_windows_${{ github.ref_name }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,5 +47,5 @@ jobs:
           name: ascii-tetroids
           path: |
             ascii-tetroids_debian_${{ github.ref_name }}.deb
-            ascii-tetroids_macos_${{ github.ref_name }}.tar.gz
+            ascii-tetroids_unix_macos__${{ github.ref_name }}.tar.gz
             ascii-tetroids_windows_${{ github.ref_name }}.zip
