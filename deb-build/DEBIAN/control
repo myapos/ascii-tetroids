@@ -1,8 +1,0 @@
-Package: ascii-tetroids
-Version: 1.0.0
-Section: games
-Priority: optional
-Architecture: all
-Maintainer: Myron Apostolakis <https://github.com/myapos>
-Description: ASCII Tetroids game written in Node.js
- A fun ASCII-based Tetroids game for the terminal.
