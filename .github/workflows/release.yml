@@ -30,6 +30,6 @@ jobs:
       - name: Upload .deb to release
         uses: softprops/action-gh-release@v1
         with:
-          files: deb-build/ascii-tetroids.deb
+          files: ascii-tetroids_${{ github.ref_name }}.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
