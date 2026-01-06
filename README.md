@@ -720,6 +720,6 @@ This approach provides:
 - [x] add music
 - [x] instructions for pausing in preview
 - [x] packaging
-  - [ ] debian
-  - [ ] windows
-  - [ ] macos
+  - [x] debian
+  - [x] windows
+  - [x] unix/macos
