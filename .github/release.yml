@@ -1,0 +1,35 @@
+name: Build and Release ASCII Tetroids
+
+on:
+  push:
+    tags:
+      - "v*.*.*" # triggers on version tags like v0.0.1
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Build .deb package
+        run: bash ./package-deb.sh
+
+      - name: Upload .deb to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: deb-build/ascii-tetroids.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
