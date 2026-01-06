@@ -17,7 +17,7 @@ DEB_BUILD_DIR="deb-build"
 DEB_FILE_NAME="${PACKAGE_NAME}_debian_${PACKAGE_VERSION}.deb"
 
 TAR_DIR="tar-build"
-TAR_FILE_NAME="${PACKAGE_NAME}_macos_${PACKAGE_VERSION}.tar.gz" 
+TAR_FILE_NAME="${PACKAGE_NAME}_unix_macos_${PACKAGE_VERSION}.tar.gz" 
 
 ZIP_DIR="zip-build"
 ZIP_FILE_NAME="${PACKAGE_NAME}_windows_${PACKAGE_VERSION}.zip"
@@ -128,10 +128,44 @@ zip -r $ZIP_FILE_NAME $ZIP_DIR/$PACKAGE_NAME
 echo "zip package created: $ZIP_FILE_NAME"
 
 # -----------------------------
-# 5 Done
+# 5. Package generic Unix tar.gz
+# -----------------------------
+echo "Packaging generic Unix tar.gz..."
+rm -rf $TAR_DIR
+mkdir -p $TAR_DIR/$PACKAGE_NAME
+
+# Copy built files
+cp -r $BUILD_DIR/* $TAR_DIR/$PACKAGE_NAME/
+cp -r inputSample.txt $TAR_DIR/$PACKAGE_NAME/
+
+# Add package.json to support ESM
+cat > $TAR_DIR/$PACKAGE_NAME/package.json <<EOL
+{
+  "type": "module"
+}
+EOL
+
+# Launcher script
+cat > $TAR_DIR/$PACKAGE_NAME/run.sh <<EOL
+#!/usr/bin/env bash
+# Launcher for ASCII Tetroids on any Unix system
+if ! command -v node &> /dev/null; then
+  echo "Node.js >=18 is required. Please install it from https://nodejs.org/"
+  exit 1
+fi
+exec node index-new.js "\$@"
+EOL
+chmod +x $TAR_DIR/$PACKAGE_NAME/run.sh
+
+# Create tar.gz
+tar -czf $TAR_FILE_NAME -C $TAR_DIR $PACKAGE_NAME
+echo "Generic Unix tar.gz created: $TAR_FILE_NAME"
+
+# -----------------------------
+# 6 Done
 # -----------------------------
 echo "All packaging complete!"
 echo "Artifacts:"
 echo " - Linux .deb: $DEB_FILE_NAME"
-echo " - Linux/macOS tar.gz: $TAR_FILE_NAME"
+echo " - Unix/macOS tar.gz: $TAR_FILE_NAME"
 echo " - Windows zip: $ZIP_FILE_NAME"
