@@ -49,6 +49,18 @@ The build produces a single minified JavaScript bundle with source dependencies 
 
 **Testing:** Vitest is configured for quick unit tests during development. Tests run with `npm test` or via the git pre-push hook.
 
+## Releases
+
+Releases are automatically built and published to [GitHub Releases](https://github.com/myros/ascii-tetroids/releases) using GitHub Actions. The workflow:
+
+1. **Tag a release**: `git tag <version> && git push origin <version>`
+2. **GitHub Actions** automatically:
+   - Builds the production bundle
+   - Generates artifacts (minified JavaScript bundle, Debian package)
+   - Creates a release with download links
+
+You can download pre-built artifacts from the [Releases page](https://github.com/myros/ascii-tetroids/releases).
+
 ## Code Quality
 
 ESLint runs automatically on `git push` via a pre-push hook configured in `.githooks/pre-push`. This prevents commits with lint errors.
