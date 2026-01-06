@@ -1,8 +1,15 @@
 {
   "name": "ascii-tetroids",
   "module": "index-new.ts",
+  "version": "0.0.1",
   "type": "module",
   "license": "MIT",
+  "bin": "dist/index-new.js",
+  "pkg": {
+    "assets": [
+      "dist/sounds/**/*"
+    ]
+  },
   "scripts": {
     "dev": "tsx index-new.ts",
     "dev:old": "tsx index.ts",
@@ -12,7 +19,8 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "vitest"
+    "test": "vitest",
+    "package:deb": "bash ./package-deb.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

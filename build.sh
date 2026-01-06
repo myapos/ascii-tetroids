@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Build script for ascii-tetroids
 # Bundles TypeScript code and copies assets to dist/
@@ -10,14 +10,15 @@ echo "Building ascii-tetroids..."
 # Clean up previous build
 echo "Cleaning dist folder..."
 rm -rf dist/
+mkdir -p dist
 
 # Bundle TypeScript with esbuild
 esbuild index-new.ts \
   --bundle \
   --platform=node \
   --format=esm \
-  --outdir=dist \
-  --external:chalk \
+  --outfile=dist/index-new.js \
+  --banner:js='#!/usr/bin/env node' \
   --minify
 
 # Copy static assets
