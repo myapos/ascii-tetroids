@@ -4,7 +4,7 @@
 
 A TypeScript terminal-based Tetris implementation with ASCII art rendering.
 
-> **Note**: This is a fan implementation inspired by Tetris. Tetris® is a registered trademark of The Tetroids Company.
+> **Disclaimer:** This is a fan-made project inspired by Tetris®. Tetris® is a registered trademark of The Tetris Company, LLC. This project is not affiliated with or endorsed by The Tetris Company, LLC.
 
 ## Quick Start
 
@@ -60,7 +60,7 @@ src/state/            GameStateMediator (Singleton), ModeLifecycle
 src/rendering/        Terminal rendering with ANSI codes
 src/input/            Event-based input handler
 src/audio/            Cross-platform sounds (Linux/macOS/Windows)
-src/shapes/           7 Tetris piece definitions
+src/shapes/           7 Tetroids piece definitions
 src/utils/            Helper functions
 ```
 
