@@ -3,7 +3,7 @@ name: Build and Release ASCII Tetroids
 on:
   push:
     tags:
-      - "v*.*.*" # triggers on version tags like v0.0.1
+      - "*.*.*"
 
 jobs:
   build-deb:
