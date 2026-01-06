@@ -25,7 +25,7 @@ jobs:
         run: npm run build
 
       - name: Build .deb package
-        run: bash ./package-deb.sh
+        run: npm run package:deb
 
       - name: Upload .deb to release
         uses: softprops/action-gh-release@v1
