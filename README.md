@@ -1,5 +1,7 @@
 # ASCII Tetroids
 
+![ASCII Tetroids Splash Screen](./splash-screen.png)
+
 A TypeScript terminal-based Tetris implementation with ASCII art rendering.
 
 > **Note**: This is a fan implementation inspired by Tetris. Tetris® is a registered trademark of The Tetroids Company.
