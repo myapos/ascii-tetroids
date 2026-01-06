@@ -1,20 +1,27 @@
 import type { Chamber } from "src/types";
 import { Terminal } from "./Terminal";
+import { FRAME_RATE } from "src/constants/constants";
 
 export class Renderer {
   private frameRate: number;
 
-  constructor(frameRate: number = 50) {
+  constructor(frameRate: number = FRAME_RATE) {
     this.frameRate = frameRate;
   }
 
   async renderFrame(chamber: Chamber, previewChamber: Chamber) {
-    const visibleRows = chamber.map((row, i) => [...row, ...previewChamber[i]]);
-
     Terminal.moveCursorHome();
     Terminal.write(
-      visibleRows
-        .map((row) => row.map((cell) => Terminal.colorizeCell(cell)).join(""))
+      chamber
+        .map((row, i) => {
+          const gameRow = row
+            .map((cell) => Terminal.colorizeCell(cell))
+            .join(" ");
+          const previewRow = previewChamber[i]
+            .map((cell) => Terminal.colorizeCell(cell))
+            .join("");
+          return gameRow + previewRow;
+        })
         .join("\n") + "\n"
     );
 

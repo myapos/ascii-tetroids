@@ -14,6 +14,12 @@ import {
   MAX_CHAMBER_HEIGHT,
   NUM_OF_COLS,
   DIFFICULTY_SELECTION_TIMEOUT,
+  MAX_QUEUE_SIZE,
+  MENU_DEBOUNCE_TIME,
+  DEMO_MOVE_DELAY,
+  GAME_OVER_CHECK_INTERVAL,
+  PAUSE_CHECK_INTERVAL,
+  DIFFICULTY_MENU_CLEAR_LINES,
 } from "src/constants/constants";
 import { UserMove } from "src/types";
 import type { IGameMode } from "src/modes/IGameMode";
@@ -130,8 +136,6 @@ export class ClassicMode implements IGameMode {
       needsRender: boolean;
     }
   ): void {
-    const MAX_QUEUE_SIZE = 2000;
-
     const moveLeftHandler = () => {
       if (
         gameState.isActive &&
@@ -200,7 +204,7 @@ export class ClassicMode implements IGameMode {
 
       // Debounce: prevent showing menu multiple times within 500ms
       const now = Date.now();
-      if (now - this.lastMenuTime < 500) {
+      if (now - this.lastMenuTime < MENU_DEBOUNCE_TIME) {
         return;
       }
       this.lastMenuTime = now;
@@ -286,7 +290,7 @@ export class ClassicMode implements IGameMode {
     this.modeLifecycle.registerListener("play-again", () => {
       if (!gameState.isActive) {
         const now = Date.now();
-        if (now - this.lastMenuTime < 500) {
+        if (now - this.lastMenuTime < MENU_DEBOUNCE_TIME) {
           return;
         }
         this.lastMenuTime = now;
@@ -317,8 +321,6 @@ export class ClassicMode implements IGameMode {
       needsRender: boolean;
     }
   ): void {
-    const MAX_QUEUE_SIZE = 2000;
-
     if (this.rotateListener) {
       this.inputHandler.off("rotate", this.rotateListener);
     }
@@ -368,8 +370,8 @@ export class ClassicMode implements IGameMode {
       // Handle difficulty selection
       const easyHandler = () => {
         if (timeoutId) clearTimeout(timeoutId);
-        // Clear 12 lines to account for all spacing and text
-        for (let i = 0; i < 12; i++) {
+        // Clear lines to account for all spacing and text
+        for (let i = 0; i < DIFFICULTY_MENU_CLEAR_LINES; i++) {
           Terminal.clearPreviousLine();
         }
         this.inputHandler.unregisterDifficultySelectionHandlers(
@@ -382,8 +384,8 @@ export class ClassicMode implements IGameMode {
 
       const normalHandler = () => {
         if (timeoutId) clearTimeout(timeoutId);
-        // Clear 12 lines to account for all spacing and text
-        for (let i = 0; i < 12; i++) {
+        // Clear lines to account for all spacing and text
+        for (let i = 0; i < DIFFICULTY_MENU_CLEAR_LINES; i++) {
           Terminal.clearPreviousLine();
         }
         this.inputHandler.unregisterDifficultySelectionHandlers(
@@ -396,8 +398,8 @@ export class ClassicMode implements IGameMode {
 
       const hardHandler = () => {
         if (timeoutId) clearTimeout(timeoutId);
-        // Clear 12 lines to account for all spacing and text
-        for (let i = 0; i < 12; i++) {
+        // Clear lines to account for all spacing and text
+        for (let i = 0; i < DIFFICULTY_MENU_CLEAR_LINES; i++) {
           Terminal.clearPreviousLine();
         }
         this.inputHandler.unregisterDifficultySelectionHandlers(
@@ -415,10 +417,10 @@ export class ClassicMode implements IGameMode {
         hardHandler
       );
 
-      // Set 15-second timeout to default to Normal
+      // Set timeout to default to Normal
       timeoutId = setTimeout(() => {
-        // Clear 12 lines (menu text + spacing)
-        for (let i = 0; i < 12; i++) {
+        // Clear lines (menu text + spacing)
+        for (let i = 0; i < DIFFICULTY_MENU_CLEAR_LINES; i++) {
           Terminal.clearPreviousLine();
         }
         this.inputHandler.unregisterDifficultySelectionHandlers(
@@ -449,7 +451,6 @@ export class ClassicMode implements IGameMode {
       needsRender: false,
     };
 
-    const MAX_QUEUE_SIZE = 2000;
     const shapes = this.gameLogic.getShapes();
 
     if (!this.isInDemoMode) {
@@ -513,7 +514,7 @@ export class ClassicMode implements IGameMode {
           );
           // Wait for user input (play-again or quit) - skip all game logic
           while (!gameState.isActive) {
-            await Terminal.sleep(100);
+            await Terminal.sleep(GAME_OVER_CHECK_INTERVAL);
           }
           // Clear the message when user chooses to play again
           Terminal.clearPreviousLine();
@@ -522,7 +523,7 @@ export class ClassicMode implements IGameMode {
         }
 
         if (gameState.isPaused) {
-          await Terminal.sleep(50);
+          await Terminal.sleep(PAUSE_CHECK_INTERVAL);
           continue;
         }
 
@@ -535,7 +536,7 @@ export class ClassicMode implements IGameMode {
           }
           this.demoMoveIndex++;
           // Slow down demo moves to be visible
-          await Terminal.sleep(650);
+          await Terminal.sleep(DEMO_MOVE_DELAY);
         }
 
         // Process all queued input

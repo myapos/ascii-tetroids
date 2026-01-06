@@ -1,5 +1,7 @@
 # ASCII Tetroids
 
+![ASCII Tetroids Splash Screen](./splash-screen.png)
+
 A TypeScript implementation of a terminal-based block-stacking puzzle game, rendered with ASCII art.
 
 > **Note**: This is a fan implementation inspired by the classic Tetroids game. Tetris® is a registered trademark of The Tetroids Company. This project is not affiliated with or endorsed by The Tetroids Company.

@@ -11,6 +11,7 @@ import {
   SIDE_WALL,
   EMPTY,
   PREVIEW,
+  PREVIEW_SHAPE,
 } from "src/constants/constants";
 
 export class Terminal {
@@ -89,14 +90,16 @@ export class Terminal {
       return chalk.cyan(cell);
     }
 
-    // All preview text and labels (letters, colon, double quote) in yellowBright
-    if (/[A-Za-z:"' ⟳]/.test(cell)) {
+    // All preview text and labels (letters, double quote) in yellowBright
+    if (/[A-Za-z"' ⟳]/.test(cell)) {
       return chalk.yellowBright(cell);
     }
 
     switch (cell) {
       case LIVE:
-        return chalk.greenBright(cell);
+        return chalk.yellowBright(cell);
+      case PREVIEW_SHAPE:
+        return chalk.yellowBright(cell);
       case REST:
         return chalk.white(cell);
       case FLOOR:
