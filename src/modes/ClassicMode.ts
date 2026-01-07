@@ -27,7 +27,6 @@ import { SoundManager } from "src/audio/SoundManager";
 import { BackgroundMusic } from "src/audio/BackgroundMusic";
 import type { GameStateMediator } from "src/state/GameStateMediator";
 import { ModeLifecycle } from "src/state/ModeLifecycle";
-import { isWindows } from "src/utils/osDetection";
 
 export class ClassicMode implements IGameMode {
   private gameLogic: GameLogic;
@@ -553,23 +552,6 @@ export class ClassicMode implements IGameMode {
             );
           } else if (move === "down") {
             gameState.chamber = this.gameLogic.moveShapeDown(gameState.chamber);
-          }
-        }
-
-        // Windows-only: process held keys for smooth continuous movement
-        if (isWindows() && !this.isInDemoMode && gameState.isActive) {
-          const heldMovements = this.inputHandler.getHeldMovements();
-          for (const move of heldMovements) {
-            if (move === "rotate") {
-              gameState.chamber = this.gameLogic.rotateShape(gameState.chamber);
-            } else if (move === "<" || move === ">") {
-              gameState.chamber = this.gameLogic.moveShapeWithGas(
-                gameState.chamber,
-                move
-              );
-            } else if (move === "down") {
-              gameState.chamber = this.gameLogic.moveShapeDown(gameState.chamber);
-            }
           }
         }
 
