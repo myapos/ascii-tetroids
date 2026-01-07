@@ -83,3 +83,9 @@ src/utils/            Helper functions
 **Possible Future Work:**
 
 - Score database/leaderboard
+
+## Platform Notes
+
+### Windows Input Behavior
+
+On Windows, terminal key repeat has a native 500ms initial delay before the OS begins repeating key events, unlike Unix/Linux/macOS which start repeating immediately. The game uses straightforward event-based input for all platforms, respecting each OS's native keyboard behavior. This means Windows players will experience slightly different input responsiveness, but the code remains simple and predictable across all platforms.
