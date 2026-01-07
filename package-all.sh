@@ -115,13 +115,23 @@ mkdir -p $ZIP_DIR/$PACKAGE_NAME
 cp -r $BUILD_DIR/* $ZIP_DIR/$PACKAGE_NAME/
 cp inputSample.txt $ZIP_DIR/$PACKAGE_NAME/
 
+# Add package.json to support ESM
+cat > $ZIP_DIR/$PACKAGE_NAME/package.json <<EOL
+{
+  "type": "module"
+}
+EOL
+
 # launcher batch script
 cat > $ZIP_DIR/$PACKAGE_NAME/run.bat <<EOL
 @echo off
+setlocal enabledelayedexpansion
+cd /d "%~dp0"
 node index-new.js %*
 if %ERRORLEVEL% NEQ 0 (
   echo Node.js >=18 is required. Please install it from https://nodejs.org/
 )
+endlocal
 EOL
 
 zip -r $ZIP_FILE_NAME $ZIP_DIR/$PACKAGE_NAME

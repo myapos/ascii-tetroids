@@ -6,6 +6,8 @@ A TypeScript terminal-based Tetris implementation with ASCII art rendering.
 
 > **Disclaimer:** This is a fan-made project inspired by Tetris®. Tetris® is a registered trademark of The Tetris Company, LLC. This project is not affiliated with or endorsed by The Tetris Company, LLC.
 
+> **Origin:** This project was born as an idea while solving [Advent of Code 2022, Day 17](https://adventofcode.com/2022/day/17) - a puzzle involving simulating falling rocks, which inspired the creation of this full-featured ASCII Tetris game.
+
 ## Quick Start
 
 ```bash
@@ -81,3 +83,9 @@ src/utils/            Helper functions
 **Possible Future Work:**
 
 - Score database/leaderboard
+
+## Platform Notes
+
+### Windows Input Behavior
+
+On Windows, terminal key repeat has a native 500ms initial delay before the OS begins repeating key events, unlike Unix/Linux/macOS which start repeating immediately. The game uses straightforward event-based input for all platforms, respecting each OS's native keyboard behavior. This means Windows players will experience slightly different input responsiveness, but the code remains simple and predictable across all platforms.

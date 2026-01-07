@@ -100,6 +100,7 @@ export class InputHandler {
         this.emit({ type: "play-again", timestamp: Date.now() });
       }
 
+      // Movement handling - same for all platforms
       if (key === "\u001b[D") {
         this.emit({ type: "move-left", timestamp: Date.now() });
       } else if (key === "\u001b[C") {

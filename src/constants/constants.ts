@@ -70,7 +70,7 @@ export const DEMO_MOVE_INTERVAL = 500; // ms between moves
 export const SPLASH_SCREEN_DELAY = 10000;
 export const DIFFICULTY_SELECTION_TIMEOUT = 15000; // ms
 // UI and gameplay timings
-export const FRAME_RATE = 50; // ms per frame (1000/50 = 20 FPS)
+export const FRAME_RATE = 30; // ms per frame (1000/30 = 33 FPS) - reduced from 50ms for better input responsiveness on Windows
 export const MAX_QUEUE_SIZE = 2000; // Maximum queued input events
 export const MENU_DEBOUNCE_TIME = 500; // ms - prevent menu from showing multiple times
 export const DEMO_MOVE_DELAY = 650; // ms - slow down demo moves to be visible

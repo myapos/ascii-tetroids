@@ -100,31 +100,48 @@ export class SoundManager {
       return;
     }
 
-    const platform = process.platform;
-    let command: string;
-    let args: string[];
+    // Use absolute path with forward slashes for consistency
+    const absolutePath = resolve(config.path).replace(/\\/g, "/");
 
-    if (platform === "darwin") {
-      // macOS
-      command = "afplay";
-      args = [config.path];
-    } else if (platform === "win32") {
-      // Windows
-      command = "powershell";
-      args = [
-        "-c",
-        "Add-Type -AssemblyName System.Media; [System.Media.SystemSounds]::Beep.Play()",
-      ];
-    } else {
-      // Linux - paplay volume range is 0-65536
-      const volumeValue = Math.round(this.volume * 65536);
-      command = "paplay";
-      args = [`--volume=${volumeValue}`, config.path];
+    if (!existsSync(absolutePath)) {
+      console.warn(`Sound file not found: ${absolutePath}`);
+      return;
     }
 
-    spawn(command, args, {
-      stdio: "ignore",
-      detached: true,
-    }).unref();
+    const platform = process.platform;
+
+    if (platform === "win32") {
+      // Windows - Use PowerShell with PlaySync
+      const psScript = `[System.Reflection.Assembly]::LoadWithPartialName('System.Media') | Out-Null; (New-Object System.Media.SoundPlayer("${absolutePath}")).PlaySync()`;
+      const proc = spawn("powershell", ["-NoProfile", "-Command", psScript], {
+        stdio: ["ignore", "pipe", "pipe"],
+        windowsHide: true,
+      });
+
+      proc.stderr?.on("data", (data) => {
+        console.error(`[SoundManager] PowerShell error: ${data}`);
+      });
+
+      proc.on("error", (err) => {
+        console.error(
+          `[SoundManager] Failed to spawn PowerShell: ${err.message}`
+        );
+      });
+    } else if (platform === "darwin") {
+      // macOS
+      const proc = spawn("afplay", [absolutePath], {
+        detached: true,
+        stdio: "ignore",
+      });
+      proc.unref();
+    } else {
+      // Linux - paplay
+      const volumeValue = Math.round(this.volume * 65536);
+      const proc = spawn("paplay", [`--volume=${volumeValue}`, absolutePath], {
+        detached: true,
+        stdio: "ignore",
+      });
+      proc.unref();
+    }
   }
 }

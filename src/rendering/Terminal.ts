@@ -107,7 +107,7 @@ export class Terminal {
       case SIDE_WALL:
         return chalk.blue(cell);
       case EMPTY:
-        return chalk.gray(cell);
+        return chalk.gray(cell); // More pale/darker than dim.white
       case PREVIEW:
         return chalk.gray(cell);
       default:
