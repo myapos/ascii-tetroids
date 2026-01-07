@@ -6,6 +6,8 @@ A TypeScript terminal-based Tetris implementation with ASCII art rendering.
 
 > **Disclaimer:** This is a fan-made project inspired by Tetris®. Tetris® is a registered trademark of The Tetris Company, LLC. This project is not affiliated with or endorsed by The Tetris Company, LLC.
 
+> **Origin:** This project was born as an idea while solving [Advent of Code 2022, Day 17](https://adventofcode.com/2022/day/17) - a puzzle involving simulating falling rocks, which inspired the creation of this full-featured ASCII Tetris game.
+
 ## Quick Start
 
 ```bash

@@ -17,7 +17,8 @@ const MUSIC_PATH = (() => {
     "src/audio/sounds",
     "background-music.wav"
   );
-  return existsSync(prodPath) ? prodPath : devPath;
+  const selected = existsSync(prodPath) ? prodPath : devPath;
+  return selected;
 })();
 
 export class BackgroundMusic {
@@ -156,19 +157,23 @@ export class BackgroundMusic {
         this.process.unref();
       }
     } else if (platform === "win32") {
-      // Windows - PowerShell loop
-      const command = "powershell";
-      const args = [
-        "-c",
-        `while ($true) { & "${MUSIC_PATH}" 2>$null; if ($LASTEXITCODE -ne 0) { break } }`,
-      ];
-      this.process = spawn(command, args, {
-        stdio: "ignore",
-        detached: true,
+      // Windows - Use PowerShell in a loop
+      const absolutePath = MUSIC_PATH.replace(/\\/g, "/");
+      const psScript = `
+[System.Reflection.Assembly]::LoadWithPartialName('System.Media') | Out-Null
+$sp = New-Object System.Media.SoundPlayer("${absolutePath}")
+while ($true) {
+  $sp.PlaySync()
+}
+`;
+      this.process = spawn("powershell", ["-NoProfile", "-Command", psScript], {
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: false,
+        windowsHide: true,
       });
+
       if (this.process.pid) {
         this.paplayPid = this.process.pid;
-        this.process.unref();
       }
     } else {
       // Linux - spawn paplay directly, auto-replay when it ends
