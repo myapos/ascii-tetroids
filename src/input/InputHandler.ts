@@ -18,10 +18,16 @@ export interface InputEvent {
   timestamp: number;
 }
 
+import { isWindows } from "src/utils/osDetection";
+
 export class InputHandler {
   private listeners: Map<InputEventType, Set<(event: InputEvent) => void>> =
     new Map();
   private isListening: boolean = false;
+  // Windows-specific: track held keys for smooth continuous movement
+  private heldKeys: Set<string> = new Set();
+  private lastKeyPressTime: Map<string, number> = new Map();
+  private keyRepeatTimeout: NodeJS.Timeout | null = null;
 
   on(eventType: InputEventType, callback: (event: InputEvent) => void) {
     if (!this.listeners.has(eventType)) {
@@ -101,12 +107,16 @@ export class InputHandler {
       }
 
       if (key === "\u001b[D") {
+        if (isWindows()) this.heldKeys.add("\u001b[D");
         this.emit({ type: "move-left", timestamp: Date.now() });
       } else if (key === "\u001b[C") {
+        if (isWindows()) this.heldKeys.add("\u001b[C");
         this.emit({ type: "move-right", timestamp: Date.now() });
       } else if (key === "\u001b[B") {
+        if (isWindows()) this.heldKeys.add("\u001b[B");
         this.emit({ type: "move-down", timestamp: Date.now() });
       } else if (key === "\u001b[A") {
+        if (isWindows()) this.heldKeys.add("\u001b[A");
         this.emit({ type: "rotate", timestamp: Date.now() });
       }
       if (key === "+" || key === "=") {
@@ -131,5 +141,35 @@ export class InputHandler {
       process.stdin.removeAllListeners();
       process.stdin.pause();
     }
+    if (isWindows()) {
+      this.heldKeys.clear();
+      this.lastKeyPressTime.clear();
+      if (this.keyRepeatTimeout) {
+        clearTimeout(this.keyRepeatTimeout);
+      }
+    }
+  }
+
+  // Windows-only: get held movements for smooth continuous input
+  getHeldMovements(): string[] {
+    if (!isWindows()) return [];
+
+    const now = Date.now();
+    // If no key press detected within 100ms, assume all keys are released
+    if (
+      now - Math.max(...Array.from(this.lastKeyPressTime.values()), 0) >
+      100
+    ) {
+      this.heldKeys.clear();
+      this.lastKeyPressTime.clear();
+      return [];
+    }
+
+    const movements: string[] = [];
+    if (this.heldKeys.has("\u001b[D")) movements.push("<");
+    if (this.heldKeys.has("\u001b[C")) movements.push(">");
+    if (this.heldKeys.has("\u001b[B")) movements.push("down");
+    if (this.heldKeys.has("\u001b[A")) movements.push("rotate");
+    return movements;
   }
 }
