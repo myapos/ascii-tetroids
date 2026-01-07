@@ -19,6 +19,7 @@ export interface InputEvent {
 }
 
 import { isWindows } from "src/utils/osDetection";
+import { Throttle } from "src/utils/throttle";
 
 export class InputHandler {
   private listeners: Map<InputEventType, Set<(event: InputEvent) => void>> =
@@ -28,6 +29,7 @@ export class InputHandler {
   private heldKeys: Set<string> = new Set();
   private lastKeyPressTime: Map<string, number> = new Map();
   private keyRepeatTimeout: NodeJS.Timeout | null = null;
+  private heldActionThrottle: Throttle = new Throttle(50); // 50ms throttle for held actions
 
   on(eventType: InputEventType, callback: (event: InputEvent) => void) {
     if (!this.listeners.has(eventType)) {
@@ -144,6 +146,7 @@ export class InputHandler {
     if (isWindows()) {
       this.heldKeys.clear();
       this.lastKeyPressTime.clear();
+      this.heldActionThrottle.reset();
       if (this.keyRepeatTimeout) {
         clearTimeout(this.keyRepeatTimeout);
       }
@@ -162,14 +165,41 @@ export class InputHandler {
     ) {
       this.heldKeys.clear();
       this.lastKeyPressTime.clear();
+      this.heldActionThrottle.reset();
       return [];
     }
 
     const movements: string[] = [];
-    if (this.heldKeys.has("\u001b[D")) movements.push("<");
-    if (this.heldKeys.has("\u001b[C")) movements.push(">");
-    if (this.heldKeys.has("\u001b[B")) movements.push("down");
-    if (this.heldKeys.has("\u001b[A")) movements.push("rotate");
+
+    // Use throttle utility to prevent jumpy behavior
+    if (
+      this.heldKeys.has("\u001b[D") &&
+      this.heldActionThrottle.canExecute("<")
+    ) {
+      movements.push("<");
+    }
+
+    if (
+      this.heldKeys.has("\u001b[C") &&
+      this.heldActionThrottle.canExecute(">")
+    ) {
+      movements.push(">");
+    }
+
+    if (
+      this.heldKeys.has("\u001b[B") &&
+      this.heldActionThrottle.canExecute("down")
+    ) {
+      movements.push("down");
+    }
+
+    if (
+      this.heldKeys.has("\u001b[A") &&
+      this.heldActionThrottle.canExecute("rotate")
+    ) {
+      movements.push("rotate");
+    }
+
     return movements;
   }
 }
