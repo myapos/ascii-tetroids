@@ -555,20 +555,6 @@ export class ClassicMode implements IGameMode {
           }
         }
 
-        // Process held keys (for smooth continuous movement on all platforms, especially Windows)
-        const heldMovements = this.inputHandler.getHeldMovements();
-        for (const move of heldMovements) {
-          if (!gameState.isActive) break;
-          if (move === "<" || move === ">") {
-            gameState.chamber = this.gameLogic.moveShapeWithGas(
-              gameState.chamber,
-              move
-            );
-          } else if (move === "down") {
-            gameState.chamber = this.gameLogic.moveShapeDown(gameState.chamber);
-          }
-        }
-
         // Apply gravity
         const now = Date.now();
         if (now - gameLoopState.lastGravityTime > gameState.gravitySpeed) {
