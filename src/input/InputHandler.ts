@@ -109,16 +109,28 @@ export class InputHandler {
       }
 
       if (key === "\u001b[D") {
-        if (isWindows()) this.heldKeys.add("\u001b[D");
+        if (isWindows()) {
+          this.heldKeys.add("\u001b[D");
+          this.lastKeyPressTime.set("\u001b[D", Date.now());
+        }
         this.emit({ type: "move-left", timestamp: Date.now() });
       } else if (key === "\u001b[C") {
-        if (isWindows()) this.heldKeys.add("\u001b[C");
+        if (isWindows()) {
+          this.heldKeys.add("\u001b[C");
+          this.lastKeyPressTime.set("\u001b[C", Date.now());
+        }
         this.emit({ type: "move-right", timestamp: Date.now() });
       } else if (key === "\u001b[B") {
-        if (isWindows()) this.heldKeys.add("\u001b[B");
+        if (isWindows()) {
+          this.heldKeys.add("\u001b[B");
+          this.lastKeyPressTime.set("\u001b[B", Date.now());
+        }
         this.emit({ type: "move-down", timestamp: Date.now() });
       } else if (key === "\u001b[A") {
-        if (isWindows()) this.heldKeys.add("\u001b[A");
+        if (isWindows()) {
+          this.heldKeys.add("\u001b[A");
+          this.lastKeyPressTime.set("\u001b[A", Date.now());
+        }
         this.emit({ type: "rotate", timestamp: Date.now() });
       }
       if (key === "+" || key === "=") {
